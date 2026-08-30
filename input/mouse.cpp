@@ -27,7 +27,7 @@ void mouse::Update() {
   buttonsLast = buttons;
 
   for (int i = 0; i < ButtonCount; i++) {
-    buttons[i] = state & SDL_BUTTON(i + i);
+    buttons[i] = state & SDL_BUTTON(i + 1);
   }
 }
 

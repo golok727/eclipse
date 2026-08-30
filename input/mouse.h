@@ -6,8 +6,8 @@ namespace eclipse::input{
     public:
       mouse(){}
       ~mouse(){}
-      void Inititlaize();
-      void Update();
+      static void Inititlaize();
+      static void Update();
 
 
       inline static int X(){return x;}

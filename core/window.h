@@ -20,6 +20,5 @@ namespace eclipse::core{
     private:
       SDL_Window* mWindow;
       SDL_GLContext mGLContext;      
-      imguiwindow mImGui;
   };
 }
