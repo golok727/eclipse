@@ -14,5 +14,4 @@ run: build
 
 gen:
 	@echo "Generating project files..."
-	./premake5 --file=premake5.lua gmake
-	@grep -q '\-include Makefile.custom' Makefile 2>/dev/null || printf '\n-include Makefile.custom\n' >> Makefile
+	./premake.sh gen

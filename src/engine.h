@@ -1,26 +1,37 @@
 #pragma once
-#include "log.h"
 #include "../core/window.h"
+#include "log.h"
 #include "app.h"
 #include "../managers/rendermanager.h"
 namespace eclipse{
-  class engine{
+  class Engine{
     public:
-      static engine& Instance();
+      static Engine& Instance();
       void Quit();
+      void Run(App* app);
+      inline App& GetApp(){return* mApp;}
       inline managers::RenderManager& GetRenderManager(){return mRenderManager;}
-      inline core::window& GetWindow(){return mWindow;}
+      inline core::Window& GetWindow(){return mWindow;}
+
     private:
-      static engine* mInstance;
-      core::window mWindow;
+
+      void Update();
+      void Render();
+
+      App* mApp;
+
+      static Engine* mInstance;
+      bool mIsInitialized;
+      bool mIsRunning;
+
+      core::Window mWindow;
       managers::LogManager mLogManager;
       managers::RenderManager mRenderManager;
-      bool mIsInitialized;
-      bool mIsRuning;
-      engine();
-      ~engine();
+      Engine();
+      ~Engine();
       bool Initialize();
       void Shutdown();
       void GetInfo();
+
   };
 }

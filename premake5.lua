@@ -146,7 +146,8 @@ project "eclipseeditor"
         "eclipse/include",
         "/opt/homebrew/include",
         "/opt/homebrew/include/SDL2",
-        "%{externals.spdlog}/include"
+        "%{externals.spdlog}/include",
+        "%{externals.glad}/include"
     }
 
     includedirs
