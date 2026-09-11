@@ -1,121 +1,400 @@
-# Learning After Textures
+# Engine Study Order
 
-The engine is now a good small-game foundation, but it is not a finished
-commercial engine. Learn it in this order:
+This is the exact order to study the project. Open one file at a time and do
+not jump ahead until the current file makes sense.
 
-## 1. Shader
+The engine is written in C++. You do not need to understand every C++ feature
+immediately. First learn what data each file owns and who calls each function.
 
-Open `graphics/shader.h` and `graphics/shader.cpp`.
+## Stage 0: Start Here
 
-- A shader is a tiny program that runs on the graphics card.
-- `Bind()` makes a shader the active drawing program.
-- Uniforms are values sent from C++ to the shader.
-- `SetUniformMat4()` sends position and camera information.
+### 1. `src/main.cpp`
 
-Then read `assets/shaders/sprite.vert` and `sprite.frag`.
+This is the program entry point.
 
-## 2. Mesh
+- `CreateApp()` creates the sample editor/game.
+- `Engine::Run()` starts the engine.
 
-Open `graphics/mesh.h` and `graphics/mesh.cpp`.
+Next file: `src/main.h`.
 
-- A mesh is the shape being drawn.
-- The engine uses one square with four corners.
-- Texture coordinates tell the shader which part of an image to show.
+### 2. `src/main.h`
 
-Look at `EditorApp::Initialize()` to see the square being created.
+This declares the small launcher contract used by `main.cpp`.
 
-## 3. Render Commands
+Next file: `src/app.h`.
 
-Open `graphics/rendercommands.h` and `graphics/rendercommands.cpp`.
+### 3. `src/app.h`
 
-- A render command is a request to draw something later.
-- The render system prepares commands.
-- The render manager executes them in order.
+This is the base application interface. A game provides these functions:
 
-Follow `RenderSystem::Render()` next.
+- `GetWindowProperties()` chooses the window settings.
+- `Initialize()` creates the first scene.
+- `Update()` runs game-specific frame logic.
+- `Shutdown()` releases game resources.
+- `ImGuiRender()` draws editor tools.
 
-## 4. ECS
+Next file: `src/engine.h`.
 
-Open `ecs/world.h`.
+## Stage 1: The Engine Loop
 
-- An entity is just an ID.
-- A component is data, such as position or animation state.
-- A system is code that processes entities with particular components.
+### 4. `src/engine.h`
 
-Read `CreateEntity()`, `Add()`, `Get()`, and `ForEach()`.
-Then compare `MovementSystem`, `AnimationSystem`, and `RenderSystem`.
+This lists the engine services and systems that live for the whole program.
+Read the member variables before reading the implementation.
 
-## 5. Components
+Next file: `src/engine.cpp`.
 
-Open `components/rendercomponents.h` and `components/gameplaycomponents.h`.
+### 5. `src/engine.cpp`
 
-- `Transform` says where an entity is and how large it is.
-- `SpriteRenderer` says which image and shader it uses.
-- `Animation` says how a sprite sheet is divided into frames.
-- `Collider` describes a solid shape.
+Read these functions in this order:
 
-To add a new game feature, start by deciding what data it needs, then add a
-component for that data.
+1. `Run()` starts the main loop.
+2. `Initialize()` creates the window and services.
+3. `Update()` runs one frame of game logic.
+4. `Render()` draws one frame.
+5. `Shutdown()` closes everything in reverse order.
 
-## 6. Systems
+The most important idea is the frame loop: input, systems, app logic, camera,
+then rendering.
 
-Open `src/engine.cpp` and study `Engine::Update()`.
+Next file: `core/clock.h`.
 
-The engine runs systems every frame. Follow this order:
+### 6. `core/clock.h`
 
-1. Input is collected by `input/keyboard.cpp`.
-2. Movement changes `Transform` data.
-3. NPC behavior changes NPC transforms.
-4. Collision corrects positions.
-5. Animation changes sprite frame coordinates.
-6. The app chooses game-specific behavior.
-7. The camera prepares the view.
+The clock gives the frame time called `deltaTime`. Movement uses this value so
+the player moves at the same speed on fast and slow computers.
 
-Systems should focus on one job. That makes them easier to replace later.
+Next file: `core/clock.cpp`.
 
-## 7. Scenes
+### 7. `core/clock.cpp`
 
-Open `managers/scenemanager.h` and `editor/editor_app.cpp`.
+Read `Tick()` to see how the time between frames is measured.
 
-- A scene is a collection of entities that represents one place or mode.
-- `EditorApp::Initialize()` builds the current scene.
-- `SceneManager::Load()` clears the old world and builds a named scene.
+Next file: `core/window.h`.
 
-The next useful improvement is splitting the sample scene into separate files
-such as `MainMenuScene`, `TownScene`, and `BattleScene`.
+## Stage 2: Window and Input
 
-## 8. Input Actions
+### 8. `core/window.h`
 
-Open `input/actions.h`.
+This describes the game window and the off-screen framebuffer used by the
+editor's GameView panel.
 
-Do not make every game system know about raw keyboard codes. Instead, systems
-ask for actions such as `MoveLeft` or `Attack`. Later you can let players
-rebind those actions without changing movement code.
+Next file: `core/window.cpp`.
 
-## 9. Camera and Viewport
+### 9. `core/window.cpp`
 
-Open `systems/camera_system.cpp`.
+Read these functions:
 
-- The camera decides which part of the world is visible.
-- The viewport is the actual window size.
-- `fitSize` and `fitScale` preserve the map proportions.
+- `Create()` opens SDL and creates OpenGL.
+- `BeginRender()` prepares the framebuffer.
+- `EndRender()` displays the result and draws ImGui.
+- `PollEvents()` receives keyboard and window events.
 
-When the game grows, add camera limits, camera shake, and smooth following.
+Next file: `core/imguiwindow.h`.
 
-## 10. Pathfinding
+### 10. `core/imguiwindow.h`
 
-Open `systems/pathfinding.cpp` and the `A* Pathfinding Demo` window.
+This is the small wrapper around ImGui. It keeps editor UI setup separate from
+the game window.
 
-- A grid stores walkable and blocked cells.
-- A* checks possible cells and prefers the cheapest promising route.
-- `FindPath()` returns the final route.
-- `FindPathTrace()` exposes the search so the editor can show it.
+Next file: `core/imguiwindow.cpp`.
 
-The next step is giving an NPC a target entity and moving it through the
-returned path one cell at a time.
+### 11. `core/imguiwindow.cpp`
 
-## 11. What Makes It A Game
+Read `Create()`, `BeginRender()`, and `EndRender()` to understand when ImGui
+starts and finishes a frame.
 
-Build one small game before adding many engine features. Add one scene, one
-player goal, a few NPCs, a win condition, a lose condition, and a restart.
-Only add an engine system when the game needs it.
+Next file: `input/keyboard.h`.
+
+### 12. `input/keyboard.h`
+
+This contains the engine's keyboard names, such as `ECLIPSE_INPUT_KEY_A`.
+
+Next file: `input/keyboard.cpp`.
+
+Read `Update()`, `Key()`, and `KeyDown()`.
+
+Next file: `input/actions.h`.
+
+### 13. `input/actions.h`
+
+This converts raw keys into game actions such as `MoveLeft` and `Attack`.
+Game systems should ask for actions instead of knowing keyboard numbers.
+
+Next file: `input/mouse.h`.
+
+### 14. `input/mouse.h`
+
+This declares mouse position and button queries.
+
+Next file: `input/mouse.cpp`.
+
+Read how mouse state is updated and queried.
+
+## Stage 3: Textures and OpenGL Drawing
+
+You already know the texture part. Continue from there in this order.
+
+### 15. `graphics/texture.h`
+
+The texture object owns an image and its OpenGL texture ID.
+
+### 16. `graphics/texture.cpp`
+
+Read the constructor, `LoadTexture()`, `Bind()`, and `SetTextureFilter()`.
+
+Next file: `graphics/shader.h`.
+
+### 17. `graphics/shader.h`
+
+The shader is the small program that runs on the graphics card. Uniform
+functions send values such as color, camera matrices, and texture coordinates.
+
+Next file: `graphics/shader.cpp`.
+
+Read shader creation first, then `Bind()`, then the uniform functions.
+
+Next file: `graphics/mesh.h`.
+
+### 18. `graphics/mesh.h`
+
+A mesh is the shape drawn on screen. The sample uses one square.
+
+Next file: `graphics/mesh.cpp`.
+
+Read how vertex positions, texture coordinates, and triangle indices are sent
+to OpenGL.
+
+Next file: `graphics/rendercommands.h`.
+
+### 19. `graphics/rendercommands.h`
+
+A render command is a saved instruction to draw something later.
+
+Next file: `graphics/rendercommands.cpp`.
+
+Read `RenderMeshTextured::Execute()`. This is where the mesh, texture, shader,
+and camera matrices meet.
+
+Next file: `managers/rendermanager.h`.
+
+### 20. `managers/rendermanager.h`
+
+This stores drawing commands until the engine is ready to execute them.
+
+Next file: `managers/rendermanager.cpp`.
+
+Read `Submit()`, `Flush()`, `Clear()`, and framebuffer handling.
+
+Next file: `systems/render_system.h`.
+
+### 21. `systems/render_system.h`
+
+This declares the system that turns entities into render commands.
+
+Next file: `systems/render_system.cpp`.
+
+Read `Render()` carefully. It collects sprites, sorts them by layer, and sends
+them to the render manager.
+
+Next files: `assets/shaders/sprite.vert` and `assets/shaders/sprite.frag`.
+
+These are the two small programs used by the sprite renderer. The vertex shader
+positions the square. The fragment shader chooses the pixel color.
+
+## Stage 4: Entities and Components
+
+### 22. `ecs/entity.h`
+
+An entity is just a number used to identify a game object.
+
+Next file: `ecs/world.h`.
+
+### 23. `ecs/world.h`
+
+The world stores entities and their components. Study these functions:
+
+1. `CreateEntity()` creates an ID.
+2. `Add()` attaches data to an entity.
+3. `Get()` finds data on one entity.
+4. `ForEach()` lets a system process matching entities.
+5. `DestroyEntity()` marks an entity for removal.
+6. `FlushDestroyed()` actually removes it safely.
+
+Next file: `components/rendercomponents.h`.
+
+### 24. `components/rendercomponents.h`
+
+Read these data types:
+
+- `Transform`: position, rotation, and size.
+- `SpriteRenderer`: mesh, shader, image, frame coordinates, and layer.
+- `Camera`: visible area and zoom.
+
+Next file: `components/gameplaycomponents.h`.
+
+### 25. `components/gameplaycomponents.h`
+
+Read these data types:
+
+- `PlayerController`: player movement speed.
+- `Collider`: rectangle used by collision code.
+- `Animation`: current frame and sprite-sheet layout.
+- `NpcBehavior`: patrol points and movement speed.
+
+The important rule is that components store data. Systems contain the actions.
+
+## Stage 5: Gameplay Systems
+
+### 26. `systems/movement_system.h`
+
+This declares player movement.
+
+Next file: `systems/movement_system.cpp`.
+
+Read how actions become a direction and how `deltaTime` changes position.
+
+Next file: `systems/animation_system.h`.
+
+### 27. `systems/animation_system.h`
+
+This declares the system that advances animation frames.
+
+Next file: `systems/animation_system.cpp`.
+
+Read how elapsed time selects a column and row in a sprite sheet.
+
+Next file: `systems/collision_system.h`.
+
+### 28. `systems/collision_system.h`
+
+This declares the basic rectangle collision system.
+
+Next file: `systems/collision_system.cpp`.
+
+Read `Overlaps()` first, then the penetration correction in `Update()`.
+
+Next file: `systems/npc_system.h`.
+
+### 29. `systems/npc_system.h`
+
+This declares NPC behavior updates.
+
+Next file: `systems/npc_system.cpp`.
+
+Read how an NPC moves between two patrol points.
+
+Next file: `systems/camera_system.h`.
+
+### 30. `systems/camera_system.h`
+
+This declares camera updates.
+
+Next file: `systems/camera_system.cpp`.
+
+Read how world coordinates become a visible rectangle and how aspect ratio is
+preserved.
+
+## Stage 6: Managers and Scenes
+
+### 31. `managers/assetmanager.h`
+
+This describes the cache for textures and shaders.
+
+Next file: `managers/assetmanager.cpp`.
+
+Read how a path is used as a cache key and how files are loaded once.
+
+Next file: `managers/layeredtilemaploader.h`.
+
+### 32. `managers/layeredtilemaploader.h`
+
+This declares the loader for the exported background PNG layers.
+
+Next file: `managers/layeredtilemaploader.cpp`.
+
+Read how each image becomes a background entity with a different render layer.
+
+Next file: `managers/tiledmaploader.h`.
+
+### 33. `managers/tiledmaploader.h`
+
+This declares the older Tiled `.tmx` loader.
+
+Next file: `managers/tiledmaploader.cpp`.
+
+Read this later. It is useful when you move from exported images to a real
+tilemap with tile IDs and collision layers.
+
+Next file: `managers/scenemanager.h`.
+
+### 34. `managers/scenemanager.h`
+
+This describes named scenes and the function that builds each scene.
+
+Next file: `managers/scenemanager.cpp`.
+
+Read how loading a scene clears the old world and calls its builder.
+
+Next file: `managers/gamestatemanager.h`.
+
+### 35. `managers/gamestatemanager.h`
+
+This stores whether the game is playing, paused, in a menu, or over.
+
+## Stage 7: The Sample Game
+
+### 36. `editor/editor_app.h`
+
+This lists the data owned by the sample editor/game.
+
+Next file: `editor/editor_app.cpp`.
+
+Read `Initialize()` in sections:
+
+1. Create the square mesh.
+2. Load textures and shaders.
+3. Create the player entity.
+4. Load the map layers.
+5. Create NPCs and walls.
+6. Create the camera.
+
+Then read `Update()` for player animation selection.
+
+Finally read `ImGuiRender()` for the tools and GameView panel.
+
+### 37. `systems/pathfinding.h`
+
+This describes a grid and the search result frames.
+
+Next file: `systems/pathfinding.cpp`.
+
+Read `FindPathTrace()` to see A* compare possible cells until it reaches the
+goal. The editor's A* window visualizes these frames.
+
+## Stage 8: Build Files and Project Shape
+
+### 38. `premake5.lua`
+
+This tells Premake which files belong to the engine library and editor app.
+Read the `eclipse` project first, then `eclipseeditor`.
+
+### 39. `premake.sh`
+
+This is the small helper that runs Premake and preserves the custom Makefile
+include.
+
+### 40. `README.md`
+
+Read this last for the normal build commands and project overview.
+
+## What To Build Next
+
+After finishing the guide, make one small game instead of adding many engine
+features. Add a goal, an enemy, a win condition, a lose condition, and a
+restart button. When you need a new feature, first decide whether it belongs
+in a component, a system, a manager, or the game app.
+
+The engine is good enough for small 2D games now. It is still a learning
+engine, so expect to improve collision, save files, map editing, audio, and
+asset packaging as your game requires them.
