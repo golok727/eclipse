@@ -1,15 +1,24 @@
 #pragma once
+
+// LEARNING MAP
+// Engine owns the long-lived services and runs the game loop. Study Run(),
+// Update(), and Render() in engine.cpp. The loop order is important: input,
+// gameplay systems, app logic, camera, then drawing.
+
 #include "../core/window.h"
 #include "../managers/rendermanager.h"
 #include "../managers/logmanager.h"
 #include "../managers/assetmanager.h"
 #include "../managers/audiomanager.h"
+#include "../managers/gamestatemanager.h"
+#include "../managers/scenemanager.h"
 #include "app.h"
 #include "../systems/render_system.h"
 #include "../systems/movement_system.h"
 #include "../systems/camera_system.h"
 #include "../systems/animation_system.h"
 #include "../systems/collision_system.h"
+#include "../systems/npc_system.h"
 #include "../core/clock.h"
 namespace eclipse{
   class Engine{
@@ -17,6 +26,7 @@ namespace eclipse{
       void Run(App* app);
       void Quit();
       void ReloadScene();
+      bool LoadScene(const std::string& name);
       static Engine& Instance();
       inline core::Window& GetWindow(){return mWindow;}
       inline App& GetApp(){return* mApp;}
@@ -24,6 +34,8 @@ namespace eclipse{
       inline ecs::World& GetWorld(){return mWorld;}
       inline managers::AssetManager& GetAssetManager(){return mAssetManager;}
       inline managers::AudioManager& GetAudioManager(){return mAudioManager;}
+      inline managers::GameStateManager& GetGameState(){return mGameStateManager;}
+      inline managers::SceneManager& GetSceneManager(){return mSceneManager;}
     private:
 
       void Update();
@@ -38,12 +50,15 @@ namespace eclipse{
       systems::CameraSystem mCameraSystem;
       systems::AnimationSystem mAnimationSystem;
       systems::CollisionSystem mCollisionSystem;
+      systems::NpcSystem mNpcSystem;
       core::Clock mClock;
       core::Window mWindow;
       App* mApp;
       managers::LogManager mLogManager;
       managers::AssetManager mAssetManager;
       managers::AudioManager mAudioManager;
+      managers::GameStateManager mGameStateManager;
+      managers::SceneManager mSceneManager;
       Engine();
       ~Engine();
       bool Initialize();

@@ -1,5 +1,11 @@
 #pragma once
 
+// LEARNING MAP
+// World is the engine's object database. An entity is only an ID; components
+// hold its data; systems read that data and make the game change.
+// Study CreateEntity(), Add(), Get(), and ForEach() in that order.
+// Then open systems/movement_system.cpp to see a system use the database.
+
 #include "entity.h"
 
 #include <memory>

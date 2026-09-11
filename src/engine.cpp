@@ -4,6 +4,8 @@
 #include <SDL_error.h>
 #include "../input/keyboard.h"
 #include "../input/mouse.h"
+#include "../input/actions.h"
+#include <string>
 namespace eclipse {
 Engine::Engine():mIsInitialized(false),mIsRunning(false),mApp(nullptr){
   
@@ -37,9 +39,19 @@ void Engine::Update(){
     ReloadScene();
     return;
   }
+  if (input::ActionPressed(input::Action::Pause)) {
+    const auto state = mGameStateManager.Current();
+    mGameStateManager.Set(state == managers::GameState::Paused
+                              ? managers::GameState::Playing
+                              : managers::GameState::Paused);
+  }
+  if (mGameStateManager.Current() != managers::GameState::Playing) {
+    return;
+  }
   mClock.Tick();
   const float deltaTime = mClock.GetDeltaTime();
   mMovementSystem.Update(mWorld, deltaTime);
+  mNpcSystem.Update(mWorld, deltaTime);
   mCollisionSystem.Update(mWorld);
   mAnimationSystem.Update(mWorld, deltaTime);
   mApp->Update(mWorld, deltaTime);
@@ -48,9 +60,11 @@ void Engine::Update(){
 }
 
 void Engine::ReloadScene() {
-  mWorld.Clear();
-  mApp->Initialize(mWorld, mAssetManager);
-  ECLIPSE_INFO("Scene reloaded");
+  LoadScene(mSceneManager.Current().empty() ? "main" : mSceneManager.Current());
+}
+
+bool Engine::LoadScene(const std::string& name) {
+  return mSceneManager.Load(name, mWorld, mAssetManager);
 }
 
 void Engine::Render(){
@@ -100,7 +114,12 @@ bool Engine::Initialize() {
         flag = true;
         mIsInitialized = true;
         mIsRunning = true;
-         mApp->Initialize(mWorld, mAssetManager);
+         mSceneManager.Register(
+             "main", [this](ecs::World& world, managers::AssetManager& assets) {
+               mApp->Initialize(world, assets);
+             });
+         LoadScene("main");
+         mGameStateManager.Set(managers::GameState::Playing);
         input::mouse::Initialize();
         input::keyboard::Initialize();
       }

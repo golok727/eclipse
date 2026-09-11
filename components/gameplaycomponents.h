@@ -23,4 +23,11 @@ struct Animation {
   int currentFrame = 0;
 };
 
+struct NpcBehavior {
+  glm::vec2 patrolStart{0.0f};
+  glm::vec2 patrolEnd{0.0f};
+  float speed = 20.0f;
+  bool movingToEnd = true;
+};
+
 } // namespace eclipse::components

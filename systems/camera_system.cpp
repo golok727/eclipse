@@ -3,6 +3,8 @@
 #include "../components/rendercomponents.h"
 #include "../glm/gtc/matrix_transform.hpp"
 
+#include <algorithm>
+
 namespace eclipse::systems {
 
 void CameraSystem::Update(ecs::World& world, const glm::ivec2& viewport) {
@@ -17,8 +19,15 @@ void CameraSystem::Update(ecs::World& world, const glm::ivec2& viewport) {
           }
         }
 
-        const float width = static_cast<float>(viewport.x) / camera.zoom;
-        const float height = static_cast<float>(viewport.y) / camera.zoom;
+        float zoom = camera.zoom;
+        if (camera.fitSize.x > 0.0f && camera.fitSize.y > 0.0f) {
+          zoom = std::min(static_cast<float>(viewport.x) / camera.fitSize.x,
+                          static_cast<float>(viewport.y) / camera.fitSize.y) *
+                 camera.fitScale;
+        }
+
+        const float width = static_cast<float>(viewport.x) / zoom;
+        const float height = static_cast<float>(viewport.y) / zoom;
 
         camera.projection = glm::ortho(
             -width * 0.5f, width * 0.5f, height * 0.5f, -height * 0.5f,

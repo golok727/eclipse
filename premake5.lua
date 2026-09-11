@@ -144,7 +144,9 @@ project "eclipseeditor"
 
     files
     {
-        "src/main.cpp"
+        "src/main.cpp",
+        "editor/**.h",
+        "editor/**.cpp"
     }
 
     sysincludedirs

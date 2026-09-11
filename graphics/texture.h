@@ -1,4 +1,10 @@
 #pragma once
+
+// LEARNING MAP
+// Texture loads an image from disk into GPU memory. Start at Texture(), then
+// follow LoadTexture() into glTexImage2D(). After this file, study Shader,
+// Mesh, RenderSystem, and finally the EditorApp scene setup.
+
 #include <cstdint>
 #include <string>
 namespace eclipse::graphics{

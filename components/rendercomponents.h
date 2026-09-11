@@ -30,6 +30,8 @@ struct Camera {
   glm::mat4 view{1.0f};
   glm::mat4 projection{1.0f};
   float zoom = 1.0f;
+  glm::vec2 fitSize{0.0f};
+  float fitScale = 1.0f;
   ecs::Entity followTarget = ecs::NullEntity;
 };
 

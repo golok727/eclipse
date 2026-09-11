@@ -1,5 +1,10 @@
 #include "render_system.h"
 
+// LEARNING MAP
+// Rendering happens in two stages: collect visible sprite data, then submit
+// draw commands. Follow Render() to see how Transform becomes a model matrix,
+// how layer controls draw order, and how RenderMeshTextured finally draws it.
+
 #include "../components/rendercomponents.h"
 #include "../graphics/rendercommands.h"
 #include "../glm/gtc/matrix_transform.hpp"

@@ -1,4 +1,11 @@
 #pragma once
+
+// LEARNING MAP
+// A shader is the small program that runs on the graphics card.
+// After learning Texture, study Shader::Bind() and SetUniformMat4().
+// The next step is graphics/rendercommands.cpp, which sends a mesh, texture,
+// and camera matrices to this shader for one draw call.
+
 #include "../glm/glm.hpp"
 #include <cstdint>
 #include <string>
