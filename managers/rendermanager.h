@@ -1,29 +1,29 @@
 #pragma once
-#include "../graphics/rendercommands.h"
 #include <memory>
 #include <queue>
 #include <stack>
-#include "../graphics/framebuffer.h"
-// #define ECLIPSE_SUBMIT_RC(type,...)std::move(std::make_unique<eclipse::graphics::rendercommands::type>(__VA_ARGS__))
-
-
-
+#include "../graphics/rendercommands.h"
+#define ECLIPSE_SUBMIT_RC(type,...)std::move(std::make_unique<eclipse::graphics::rendercommands::type>(__VA_ARGS__))
 namespace eclipse::managers{
   class RenderManager{
+    friend class graphics::rendercommands::PopFrameBuffer;
+    friend class graphics::rendercommands::PushFrameBuffer;
     public:
       RenderManager(){}
       ~RenderManager(){}
-      void Initialize();
-      void Shutdown();
-      void SetClearColor(float r , float g , float b , float a);
-      void Clear();
-      void Submit(std::unique_ptr<graphics::rendercommands::RenderCommands>rc);
-      void Flush();
-      void SetWireFrameMode(bool enabled);
-      
+       void Initialize();
+       void Shutdown();
+       void Clear();
+       void SetClearColor(const glm::vec4 clearColor);
+       void Submit(std::unique_ptr<graphics::rendercommands::RenderCommands>rc);
+       void Flush();
+       void SetWireFrameMode(bool enabled);
+       void SetViewPort(const glm::ivec4 dimension);
+       void PushFrameBuffer(std::shared_ptr<graphics::FrameBuffer>frameBuffer);
+       void PopFrameBuffer(std::shared_ptr<graphics::FrameBuffer>frameBuffer);
     private:
-
-      std::queue<std::unique_ptr<graphics::rendercommands::RenderCommands>>mRenderCommands;      
+      std::queue<std::unique_ptr<graphics::rendercommands::RenderCommands>>mRenderCommands;
+      std::stack<std::shared_ptr<graphics::FrameBuffer>>mFrameBuffer;
 
   };
 }

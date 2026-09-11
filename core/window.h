@@ -1,36 +1,41 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <SDL_video.h>
+#include <memory>
 #include <string>
-#include "glad/glad.h"
 #include "imguiwindow.h"
+#include <glm/glm.hpp>
 struct SDL_Window;
 using SDL_GLContext = void*;
+namespace eclipse::graphics{
+  class FrameBuffer;
+}
 namespace eclipse::core{
-  struct WindowProperties{
+  struct WindowProperites{
     std::string title;
     int x,y,w,h;
-    int wMin,hMin;
     int flags;
-    float ccR,ccG,ccB;
+    int wMin,hMin;
+    glm::vec3 clearColor;
     ImGuiWindowProperties ImGuiProps;
-    WindowProperties();
+    WindowProperites();
   };
   class Window{
     public:
       Window();
       ~Window();
-      bool Create(WindowProperties& props);
+      bool Create(const WindowProperites& props);
       void Shutdown();
       void PollEvents();
       void BeginRender();
       void EndRender();
-      void GetSize(int& w ,int& h);
-
+      void SetAttributes();
+      inline graphics::FrameBuffer* GetFrameBuffer(){return mFrameBuffer.get();}
       inline SDL_Window* GetSDLWindow(){return mWindow;}
       inline SDL_GLContext GetGLContext(){return mGLContext;}
-
+      glm::ivec2 GetSize();
     private:
+      std::shared_ptr<graphics::FrameBuffer>mFrameBuffer;
       ImGuiWindow mImGuiWindow;
       SDL_Window* mWindow;
       SDL_GLContext mGLContext;

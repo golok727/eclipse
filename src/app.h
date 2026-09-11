@@ -1,16 +1,16 @@
 #pragma once
 #include "../core/window.h"
+#include "../ecs/world.h"
+#include "../managers/assetmanager.h"
 namespace eclipse{
-  class App{
-    public:
-      
-      App(){}
-      ~App(){}
-      inline virtual  core::WindowProperties GetWindowProperties(){return core::WindowProperties();}
-      virtual void Initialize(){}
-      virtual void Shutdown(){}
-      virtual void Update(){}
-      virtual void Render(){}
-      virtual void ImGuiRender(){}
-  };
+class App{
+  public:
+    App(){}
+    ~App(){}
+    inline virtual core::WindowProperites GetWindowProperties(){return core::WindowProperites();}
+    virtual void Initialize(ecs::World&, managers::AssetManager&){}
+    virtual void Shutdown(){}
+    virtual void Update(ecs::World&, float){}
+    virtual void ImGuiRender(){}
+};
 }

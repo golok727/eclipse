@@ -1,26 +1,24 @@
 #pragma once
-
-#include <SDL_events.h>
-
+#include <SDL2/SDL.h>
 typedef union SDL_Event SDL_Event;
 
 namespace eclipse::core{
   struct ImGuiWindowProperties{
-    bool MoveFromTitleBarOnly = true;
-    bool IsViewPortEnabled = true;
-    bool IsDockingEnabled = true;
+    bool MoveFromTitleBarOnly = false;
+    bool IsViewportEnabled = false;
+    bool IsDockingEnabled = false;
   };
   class ImGuiWindow{
     public:
       ImGuiWindow(){}
       ~ImGuiWindow(){}
-      void Create(ImGuiWindowProperties& ImGuiProps);
+      void Create(const ImGuiWindowProperties& ImGuiProps);
       void Shutdown();
       void HandleSDLEvents(SDL_Event& event);
       void BeginRender();
       void EndRender();
-      bool WantCaptureMouse();
-      bool WantCaptureKeyboard();
+      bool WantToCaptureKeyboard();
+      bool WantToCaptureMouse();
     private:
   };
 }

@@ -6,7 +6,7 @@
 #include "../src/engine.h"
 namespace eclipse::core{
 
-void ImGuiWindow::Create(ImGuiWindowProperties& ImGuiProps){
+void ImGuiWindow::Create(const ImGuiWindowProperties &ImGuiProps){
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
@@ -14,7 +14,7 @@ void ImGuiWindow::Create(ImGuiWindowProperties& ImGuiProps){
   if(ImGuiProps.IsDockingEnabled){
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   }
-  if(ImGuiProps.IsViewPortEnabled){
+  if(ImGuiProps.IsViewportEnabled){
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
   }
   auto& window = Engine::Instance().GetWindow();
@@ -25,6 +25,7 @@ void ImGuiWindow::Shutdown(){
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext();
+
 }
 void ImGuiWindow::HandleSDLEvents(SDL_Event &event){
   ImGui_ImplSDL2_ProcessEvent(&event);
@@ -33,20 +34,26 @@ void ImGuiWindow::BeginRender(){
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplSDL2_NewFrame();
   ImGui::NewFrame();
+  
 }
 void ImGuiWindow::EndRender(){
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-  auto& window = Engine::Instance().GetWindow();
-  ImGui::UpdatePlatformWindows();
-  ImGui::RenderPlatformWindowsDefault();
-  SDL_GL_MakeCurrent(window.GetSDLWindow(), window.GetGLContext());
-}
-bool ImGuiWindow::WantCaptureKeyboard(){
-  return ImGui::GetIO().WantCaptureKeyboard;
+  ImGuiIO& io = ImGui::GetIO();
+  if(io.ConfigFlags && ImGuiConfigFlags_ViewportsEnable){
+    auto& window = Engine::Instance().GetWindow();
+    ImGui::UpdatePlatformWindows();
+    ImGui::RenderPlatformWindowsDefault();
+    SDL_GL_MakeCurrent(window.GetSDLWindow(), window.GetGLContext());
+  }
+
 }
 
-bool ImGuiWindow::WantCaptureMouse(){
+bool ImGuiWindow::WantToCaptureKeyboard(){
+  return ImGui::GetIO().WantCaptureKeyboard;
+}
+bool ImGuiWindow::WantToCaptureMouse(){
   return ImGui::GetIO().WantCaptureMouse;
 }
-}
+
+} // namespace eclipse::core

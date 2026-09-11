@@ -40,12 +40,18 @@ project "eclipse"
         "src/**.cpp",
         "core/**.h",
         "core/**.cpp",
-        "managers/**.h",
-        "managers/**.cpp",
+         "managers/**.h",
+         "managers/**.cpp",
         "graphics/**.h",
         "graphics/**.cpp",
-        "input/**.h",
-        "input/**.cpp",
+         "input/**.h",
+         "input/**.cpp",
+         "ecs/**.h",
+         "ecs/**.cpp",
+         "components/**.h",
+         "components/**.cpp",
+         "systems/**.h",
+         "systems/**.cpp",
         "external/glad/src/glad.c"
     }
 
