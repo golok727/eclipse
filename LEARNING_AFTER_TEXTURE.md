@@ -390,10 +390,144 @@ Read this last for the normal build commands and project overview.
 
 ## What To Build Next
 
-After finishing the guide, make one small game instead of adding many engine
-features. Add a goal, an enemy, a win condition, a lose condition, and a
-restart button. When you need a new feature, first decide whether it belongs
-in a component, a system, a manager, or the game app.
+## How To Write An Actual Game
+
+The engine is the reusable machinery. Your game is the rules and content built
+on top of it. Do not put every game idea into `src/engine.cpp`.
+
+### Keep Engine Code And Game Code Separate
+
+Engine code belongs in these folders:
+
+- `ecs/`: entity storage.
+- `components/`: reusable data types.
+- `systems/`: reusable rules that process components.
+- `graphics/`: OpenGL drawing.
+- `input/`: keyboard and mouse input.
+- `managers/`: assets, scenes, audio, and game states.
+
+Your game code should eventually live in folders such as:
+
+```text
+game/
+  game_app.h
+  game_app.cpp
+  components/
+  systems/
+  scenes/
+  data/
+assets/
+  game/
+```
+
+The current `editor/EditorApp` is a sample game and editor combined. Use it to
+learn, then gradually move your own player, enemies, scenes, and rules into a
+`game/` folder.
+
+### Build A Small Complete Game First
+
+Start with one simple game loop:
+
+1. The player starts in a scene.
+2. The player can move.
+3. An enemy patrols or follows the player.
+4. The player can attack or reach a goal.
+5. The game detects success or failure.
+6. A message appears for win or lose.
+7. A restart action loads the scene again.
+
+Do not begin with a giant RPG. Finish one small game loop first. A finished
+small game teaches more than a large unfinished engine.
+
+### Add A Player
+
+Start in `editor/editor_app.cpp` and find the player creation code.
+
+Give the player these components:
+
+- `Transform` for position and size.
+- `SpriteRenderer` for the image.
+- `PlayerController` for movement speed.
+- `Collider` for contact with walls or enemies.
+- `Animation` for the sprite sheet.
+
+Then follow the player through these systems:
+
+1. `input/actions.h` reads the requested action.
+2. `systems/movement_system.cpp` changes the position.
+3. `systems/collision_system.cpp` corrects illegal overlap.
+4. `systems/animation_system.cpp` changes the displayed frame.
+5. `systems/render_system.cpp` draws the player.
+
+### Add An Enemy
+
+Create another entity with a `Transform`, `SpriteRenderer`, `Collider`, and
+`Animation`. Add a new `EnemyBehavior` component in the game folder, then add a
+game system that changes the enemy position.
+
+For a simple enemy, start with this order:
+
+1. Patrol between two points.
+2. Detect the player inside a distance.
+3. Ask `AStarPathfinder` for a route.
+4. Move through the route one grid cell at a time.
+5. Damage the player when close enough.
+
+Study `systems/npc_system.cpp` before writing the enemy system. It is the
+smallest behavior example in the project.
+
+### Add A Goal And Game Rules
+
+Create a goal entity with a collider or a custom `Goal` component. In a game
+system, check whether the player overlaps it. When that happens:
+
+```cpp
+Engine::Instance().GetGameState().Set(managers::GameState::GameOver);
+```
+
+For a real game, add a separate `Won` state later. The current Game State
+window is only a debugging tool; replace it with your own game HUD and menus.
+
+### Make Separate Scenes
+
+Do not keep every level inside one `Initialize()` function. Create scene builder
+functions such as:
+
+```text
+game/scenes/main_menu_scene.cpp
+game/scenes/forest_scene.cpp
+game/scenes/battle_scene.cpp
+```
+
+Register each builder with `SceneManager`, then load them by name. A scene
+builder should create entities and configure the starting camera. It should
+not contain the engine loop or OpenGL code.
+
+### Save Game Content
+
+The current sample still creates entities in C++ and does not yet save scenes
+from the editor. Until scene serialization is added, use one builder function
+per scene and commit those files with the game. The next editor feature to add
+is saving and loading transforms, sprites, colliders, and animation settings
+to a scene file.
+
+### A Practical First Project
+
+Build a small top-down game with this plan:
+
+1. Main menu scene.
+2. One map scene using the tilemap layers.
+3. One controllable character.
+4. Three patrol enemies.
+5. One purple A* route used by an enemy.
+6. Three collectible objects.
+7. A win state after collecting all objects.
+8. A lose state after the player is hit three times.
+9. Pause and restart buttons.
+10. A final build that starts directly in the menu.
+
+This uses the systems already in the engine and gives you a real game to
+extend with better art, lighting, sound, menus, and story.
 
 The engine is good enough for small 2D games now. It is still a learning
 engine, so expect to improve collision, save files, map editing, audio, and
