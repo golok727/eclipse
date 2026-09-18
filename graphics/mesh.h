@@ -27,6 +27,10 @@ public:
   inline uint32_t GetElementCount(){return mElementCount;}
   inline uint32_t GetVertexCount(){return mVertexCount;}
   ~Mesh();
+  Mesh(const Mesh&) = delete;
+  Mesh& operator=(const Mesh&) = delete;
+  Mesh(Mesh&&) = delete;
+  Mesh& operator=(Mesh&&) = delete;
   void Bind();
   void Unbind();
 

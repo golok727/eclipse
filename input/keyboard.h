@@ -11,6 +11,7 @@ namespace eclipse::input{
       static void Initialize();
 
       static void Update();
+      static void SetEnabled(bool enabled);
 
       static bool Key(int key);
       static bool KeyDown(int key);
@@ -20,6 +21,7 @@ namespace eclipse::input{
       constexpr static const int KeyCount = 287; // sdl scan codes for num
       static std::array<bool,KeyCount>keys;
       static std::array<bool,KeyCount>keysLast;
+      static bool isEnabled;
       
 
       

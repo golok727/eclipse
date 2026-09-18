@@ -11,11 +11,12 @@ namespace eclipse::input{
       static void Initialize();
 
       static void Update();
+      static void SetEnabled(bool enabled);
       inline static int X (){return x;}
       inline static int Y (){return y;}
 
-      inline static int DX(){return x- xLast;}
-      inline static int DY(){return y - yLast;}
+      inline static int DX(){return isEnabled ? x - xLast : 0;}
+      inline static int DY(){return isEnabled ? y - yLast : 0;}
       static bool Button(int button);
       static bool ButtonDown(int button);
       static bool ButtonUp(int button);
@@ -24,6 +25,7 @@ namespace eclipse::input{
       constexpr static const int ButtonCount =5; // sdl supports 5 mouse buttons
       static std::array<bool,ButtonCount>buttons;
       static std::array<bool,ButtonCount>buttonsLast;
+      static bool isEnabled;
       
 
       static int x,xLast;

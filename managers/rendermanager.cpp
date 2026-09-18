@@ -10,7 +10,7 @@ void RenderManager::Initialize(){
       "OpenGL info: \n  Renderer: \t{}\n Vendor: \t{}\n Version: \t{}",
       (const char *)glGetString(GL_RENDERER),
       (const char *)glGetString(GL_VENDOR),
-      (const char *)glGetString(GL_VERSION))
+      (const char *)glGetString(GL_VERSION));
 
 
   glEnable(GL_DEPTH_TEST);

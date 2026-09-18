@@ -40,7 +40,6 @@ namespace eclipse{
 
       void Update();
       void Render();
-      static Engine* mInstance;
       bool mIsInitialized;
       bool mIsRunning;
       managers::RenderManager mRenderManager;

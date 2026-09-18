@@ -1,38 +1,49 @@
 #pragma once
 
-// LEARNING MAP
-// Texture loads an image from disk into GPU memory. Start at Texture(), then
-// follow LoadTexture() into glTexImage2D(). After this file, study Shader,
-// Mesh, RenderSystem, and finally the EditorApp scene setup.
-
 #include <cstdint>
 #include <string>
-namespace eclipse::graphics{
-  enum class TextureFilter{
-    Nearest,
-    Linear
-  };
 
-  class Texture{
-    public:
-      Texture(const std::string& path);
-      ~Texture();
-      inline const std::string& GetPath(){return mPath;}
-      inline uint32_t GetWidth(){return mWidth;}
-      inline uint32_t GetHeight(){return mHeight;}
-      inline uint32_t GetId(){return mId;}
-      inline uint32_t GetNumChannels(){return mNumChannels;}
-      inline TextureFilter GetTextureFilter(){return mFilter;}
-      void Bind();
-      void UnBind();
-      void SetTextureFilter(TextureFilter filter);
-    private:
-      void LoadTexture();
-      std::string mPath;
-      TextureFilter mFilter;
-      uint32_t mId;
-      uint32_t mWidth, mHeight;
-      uint32_t mNumChannels;
-      unsigned char* mPixels;
-  };
-}
+namespace eclipse::graphics {
+
+enum class TextureFilter {
+  Nearest,
+  Linear,
+};
+
+class Texture {
+public:
+  explicit Texture(const std::string& path,
+                   TextureFilter filter = TextureFilter::Linear);
+  ~Texture();
+
+  Texture(const Texture&) = delete;
+  Texture& operator=(const Texture&) = delete;
+  Texture(Texture&&) = delete;
+  Texture& operator=(Texture&&) = delete;
+
+  const std::string& GetPath() const { return mPath; }
+  std::uint32_t GetWidth() const { return mWidth; }
+  std::uint32_t GetHeight() const { return mHeight; }
+  std::uint32_t GetId() const { return mId; }
+  std::uint32_t GetNumChannels() const { return mNumChannels; }
+  TextureFilter GetTextureFilter() const { return mFilter; }
+  bool IsLoadedFromSource() const { return mLoadedFromSource; }
+
+  void Bind() const;
+  void UnBind() const;
+
+private:
+  void LoadTexture();
+  void ApplyTextureFilter() const;
+
+  std::string mPath;
+  TextureFilter mFilter;
+  std::uint32_t mId = 0;
+  std::uint32_t mWidth = 0;
+  std::uint32_t mHeight = 0;
+  std::uint32_t mNumChannels = 0;
+  unsigned char* mPixels = nullptr;
+  bool mLoadedFromSource = false;
+};
+
+} // namespace eclipse::graphics

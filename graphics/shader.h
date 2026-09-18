@@ -1,37 +1,44 @@
 #pragma once
 
-// LEARNING MAP
-// A shader is the small program that runs on the graphics card.
-// After learning Texture, study Shader::Bind() and SetUniformMat4().
-// The next step is graphics/rendercommands.cpp, which sends a mesh, texture,
-// and camera matrices to this shader for one draw call.
+#include <glm/glm.hpp>
 
-#include "../glm/glm.hpp"
 #include <cstdint>
 #include <string>
 #include <unordered_map>
-namespace eclipse::graphics{
-  class Shader{
-    public:
-      Shader(const std::string& vertex, const std::string& fragment);
-      ~Shader();
-      void Bind();
-      void Unbind();
-      void SetUniformInt(const std::string& name , int val);
-      void SetUniformFloat(const std::string& name , float val);
-      void SetUniformFloat2(const std::string& name , float val1, float val2);
-      void SetUniformFloat3(const std::string& name , float val1, float val2, float val3);
-      void SetUniformFloat4(const std::string& name , float val1, float val2, float val3, float val4);
-      void SetUniformFloat2(const std::string &name, const glm::vec2 &val);
-      void SetUniformFloat3(const std::string &name, const glm::vec3 &val);
-      void SetUniformFloat4(const std::string &name, const glm::vec4 &val);
-      void SetUniformMat3(const std::string &name, const glm::mat3 &mat);
-      void SetUniformMat4(const std::string &name, const glm::mat4 &mat);
 
-    private:
-      uint32_t mProgramId;
-      int GetUniformLocations(const std::string& name);
-      std::unordered_map<std::string, int>mGetUniformLocations;
+namespace eclipse::graphics {
 
-  };
-}
+class Shader {
+public:
+  Shader(const std::string& vertex, const std::string& fragment);
+  ~Shader();
+
+  Shader(const Shader&) = delete;
+  Shader& operator=(const Shader&) = delete;
+  Shader(Shader&&) = delete;
+  Shader& operator=(Shader&&) = delete;
+
+  bool IsValid() const { return mProgramId != 0; }
+  void Bind() const;
+  void Unbind() const;
+  void SetUniformInt(const std::string& name, int value);
+  void SetUniformFloat(const std::string& name, float value);
+  void SetUniformFloat2(const std::string& name, float value1, float value2);
+  void SetUniformFloat3(const std::string& name, float value1, float value2,
+                        float value3);
+  void SetUniformFloat4(const std::string& name, float value1, float value2,
+                        float value3, float value4);
+  void SetUniformFloat2(const std::string& name, const glm::vec2& value);
+  void SetUniformFloat3(const std::string& name, const glm::vec3& value);
+  void SetUniformFloat4(const std::string& name, const glm::vec4& value);
+  void SetUniformMat3(const std::string& name, const glm::mat3& matrix);
+  void SetUniformMat4(const std::string& name, const glm::mat4& matrix);
+
+private:
+  int GetUniformLocation(const std::string& name);
+
+  std::uint32_t mProgramId = 0;
+  std::unordered_map<std::string, int> mUniformLocations;
+};
+
+} // namespace eclipse::graphics

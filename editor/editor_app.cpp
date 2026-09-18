@@ -23,6 +23,101 @@
 
 namespace eclipse::editor {
 
+namespace {
+
+const char* TextureFilterName(graphics::TextureFilter filter) {
+  return filter == graphics::TextureFilter::Nearest ? "Nearest" : "Linear";
+}
+
+bool DrawAssetCard(managers::AssetManager& assetManager,
+                   const managers::AssetInfo& asset, bool selected,
+                   const ImVec2& size) {
+  ImGui::PushID(asset.id.c_str());
+  const ImVec2 topLeft = ImGui::GetCursorScreenPos();
+  const bool clicked = ImGui::Selectable("##asset-card", selected, 0, size);
+  const bool hovered = ImGui::IsItemHovered();
+  auto* draw = ImGui::GetWindowDrawList();
+  const ImVec2 bottomRight{topLeft.x + size.x, topLeft.y + size.y};
+
+  const ImU32 background = selected
+                               ? IM_COL32(65, 42, 92, 255)
+                               : hovered ? IM_COL32(48, 48, 58, 255)
+                                         : IM_COL32(31, 31, 38, 255);
+  const ImU32 border = selected ? IM_COL32(197, 116, 255, 255)
+                                : IM_COL32(72, 72, 84, 255);
+  draw->AddRectFilled(topLeft, bottomRight, background, 5.0f);
+  draw->AddRect(topLeft, bottomRight, border, 5.0f, 0,
+                selected ? 3.0f : 1.0f);
+
+  constexpr float padding = 7.0f;
+  constexpr float imageHeight = 82.0f;
+  const ImVec2 imageMin{topLeft.x + padding, topLeft.y + padding};
+  const ImVec2 imageMax{bottomRight.x - padding,
+                        topLeft.y + padding + imageHeight};
+  draw->AddRectFilled(imageMin, imageMax, IM_COL32(18, 18, 22, 255), 3.0f);
+
+  std::shared_ptr<graphics::Texture> texture;
+  if (asset.type == managers::AssetType::Texture) {
+    texture = assetManager.GetTexture(asset.id);
+  }
+  if (texture) {
+    const float sourceWidth = static_cast<float>(texture->GetWidth());
+    const float sourceHeight = static_cast<float>(texture->GetHeight());
+    const float availableWidth = imageMax.x - imageMin.x;
+    const float availableHeight = imageMax.y - imageMin.y;
+    const float scale =
+        sourceWidth > 0.0f && sourceHeight > 0.0f
+            ? std::min(availableWidth / sourceWidth,
+                       availableHeight / sourceHeight)
+            : 0.0f;
+    const ImVec2 drawSize{sourceWidth * scale, sourceHeight * scale};
+    const ImVec2 drawMin{imageMin.x + (availableWidth - drawSize.x) * 0.5f,
+                         imageMin.y + (availableHeight - drawSize.y) * 0.5f};
+    const ImVec2 drawMax{drawMin.x + drawSize.x, drawMin.y + drawSize.y};
+    draw->AddImage(ImTextureID(texture->GetId()), drawMin, drawMax, {0, 1},
+                   {1, 0});
+
+    const std::string dimensions =
+        std::to_string(texture->GetWidth()) + " x " +
+        std::to_string(texture->GetHeight());
+    draw->AddText({imageMin.x + 4.0f, imageMax.y - ImGui::GetTextLineHeight()},
+                  IM_COL32(230, 230, 235, 255), dimensions.c_str());
+  } else {
+    const char* typeName = managers::AssetTypeName(asset.type);
+    const ImVec2 typeSize = ImGui::CalcTextSize(typeName);
+    draw->AddText(
+        {imageMin.x + (imageMax.x - imageMin.x - typeSize.x) * 0.5f,
+         imageMin.y + (imageMax.y - imageMin.y - typeSize.y) * 0.5f},
+        IM_COL32(180, 180, 195, 255), typeName);
+  }
+
+  const ImVec4 textClip{topLeft.x + padding, imageMax.y + 6.0f,
+                        bottomRight.x - padding, bottomRight.y - 4.0f};
+  draw->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
+                {textClip.x, textClip.y}, IM_COL32(240, 240, 245, 255),
+                asset.id.c_str(), nullptr, textClip.z - textClip.x, &textClip);
+
+  if (hovered) {
+    ImGui::BeginTooltip();
+    ImGui::TextUnformatted(asset.id.c_str());
+    ImGui::Separator();
+    ImGui::Text("Type: %s", managers::AssetTypeName(asset.type));
+    ImGui::Text("Group: %s", asset.group.c_str());
+    if (asset.type == managers::AssetType::Shader) {
+      ImGui::Text("Vertex: %s", asset.vertexPath.string().c_str());
+      ImGui::Text("Fragment: %s", asset.fragmentPath.string().c_str());
+    } else {
+      ImGui::Text("Source: %s", asset.path.string().c_str());
+    }
+    ImGui::EndTooltip();
+  }
+
+  ImGui::PopID();
+  return clicked;
+}
+
+} // namespace
+
 core::WindowProperites EditorApp::GetWindowProperties() {
   core::WindowProperites props;
   props.title = "eclipseeditor";
@@ -49,18 +144,20 @@ void EditorApp::Initialize(ecs::World& world, managers::AssetManager& assets) {
   mMesh = std::make_shared<graphics::Mesh>(
       vertices, 4, 3, texcoords, elements, 6);
 
-  // AssetManager caches each path, so loading the same image twice is cheap.
-  // Learn next: managers/assetmanager.cpp and graphics/texture.cpp.
-  mIdleTexture = assets.LoadTexture("assets/character/Schoolgirl_1/Idle.png");
-  mWalkTexture = assets.LoadTexture("assets/character/Schoolgirl_1/Walk.png");
-  mAttackTexture = assets.LoadTexture(
-      "assets/character/Schoolgirl_1/Attack_1.png");
-  mChargeTexture = assets.LoadTexture("assets/character/Schoolgirl_1/Charge.png");
-  mHurtTexture = assets.LoadTexture("assets/character/Schoolgirl_1/Hurt.png");
-  mDeadTexture = assets.LoadTexture("assets/character/Schoolgirl_1/Dead.png");
-  mShader = assets.LoadShaderFromFiles(
-      "default-sprite", "assets/shaders/sprite.vert",
-      "assets/shaders/sprite.frag");
+  // Asset IDs are resolved through assets/manifest.json. Game code does not
+  // depend on repository-relative file paths.
+  mIdleTexture = assets.GetTexture("character.schoolgirl1.idle");
+  mWalkTexture = assets.GetTexture("character.schoolgirl1.walk");
+  mAttackTexture = assets.GetTexture("character.schoolgirl1.attack");
+  mChargeTexture = assets.GetTexture("character.schoolgirl1.charge");
+  mHurtTexture = assets.GetTexture("character.schoolgirl1.hurt");
+  mDeadTexture = assets.GetTexture("character.schoolgirl1.dead");
+  mShader = assets.GetShader("shader.sprite");
+  if (!mIdleTexture || !mWalkTexture || !mAttackTexture || !mChargeTexture ||
+      !mHurtTexture || !mDeadTexture || !mShader) {
+    ECLIPSE_ERROR("Editor scene cannot initialize because required assets failed");
+    return;
+  }
 
   // A factory keeps entity creation consistent. The components describe data;
   // systems later decide what that data does.
@@ -103,15 +200,16 @@ void EditorApp::Initialize(ecs::World& world, managers::AssetManager& assets) {
   world.Add<components::Animation>(
       mPlayerEntity, components::Animation{6, 6, 1, 0.12f});
 
-  // The map is currently a set of exported Photoshop layers, not a tile grid.
-  // Learn next: managers/layeredtilemaploader.cpp.
+  // Each layer is a manifest asset, so validation and packaged builds include
+  // every map dependency.
   managers::LayeredTilemapLoader mapLoader;
   mapLoader.Load(
-      "assets/tilemaps",
-      {"Layer_0011_0.png", "Layer_0010_1.png", "Layer_0009_2.png",
-       "Layer_0008_3.png", "Layer_0006_4.png", "Layer_0005_5.png",
-       "Layer_0003_6.png", "Layer_0002_7.png", "Layer_0001_8.png",
-       "Layer_0000_9.png", "Layer_0004_Lights.png", "Layer_0007_Lights.png"},
+      {"map.background.layer0011", "map.background.layer0010",
+       "map.background.layer0009", "map.background.layer0008",
+       "map.background.layer0006", "map.background.layer0005",
+       "map.background.layer0003", "map.background.layer0002",
+       "map.background.layer0001", "map.background.layer0000",
+       "map.background.lights0004", "map.background.lights0007"},
       world, assets, mMesh, mShader);
 
   // NPCs are ordinary entities with an Animation and NpcBehavior component.
@@ -261,6 +359,121 @@ void EditorApp::ImGuiRender() {
   if (state == managers::GameState::GameOver && ImGui::Button("Restart")) {
     engine.LoadScene("main");
     gameState.Set(managers::GameState::Playing);
+  }
+  ImGui::End();
+
+  ImGui::SetNextWindowSize({760.0f, 720.0f}, ImGuiCond_FirstUseEver);
+  ImGui::Begin("Assets");
+  auto& assetManager = engine.GetAssetManager();
+  ImGui::TextDisabled("Asset root: %s",
+                      assetManager.GetAssetRoot().string().c_str());
+  ImGui::SetNextItemWidth(-1.0f);
+  ImGui::InputTextWithHint("##asset-search", "Search asset ID or path",
+                           mAssetFilter.data(), mAssetFilter.size());
+  const std::string assetFilter = mAssetFilter.data();
+
+  if (mSelectedAssetId.empty() && !assetManager.GetAssets().empty()) {
+    mSelectedAssetId = assetManager.GetAssets().front().id;
+  }
+
+  constexpr float cardWidth = 148.0f;
+  constexpr float cardHeight = 132.0f;
+  const float listHeight =
+      std::max(260.0f, ImGui::GetContentRegionAvail().y * 0.52f);
+  if (ImGui::BeginChild("AssetCards", {0.0f, listHeight}, true)) {
+    const float spacing = ImGui::GetStyle().ItemSpacing.x;
+    const int columnCount = std::max(
+        1, static_cast<int>((ImGui::GetContentRegionAvail().x + spacing) /
+                            (cardWidth + spacing)));
+    int visibleIndex = 0;
+    for (const auto& asset : assetManager.GetAssets()) {
+      const std::string sourceText =
+          asset.type == managers::AssetType::Shader
+              ? asset.vertexPath.string() + " " + asset.fragmentPath.string()
+              : asset.path.string();
+      if (!assetFilter.empty() &&
+          asset.id.find(assetFilter) == std::string::npos &&
+          sourceText.find(assetFilter) == std::string::npos) {
+        continue;
+      }
+      if (visibleIndex % columnCount != 0) {
+        ImGui::SameLine();
+      }
+      if (DrawAssetCard(assetManager, asset,
+                        mSelectedAssetId == asset.id,
+                        {cardWidth, cardHeight})) {
+        mSelectedAssetId = asset.id;
+      }
+      ++visibleIndex;
+    }
+    if (visibleIndex == 0) {
+      ImGui::TextDisabled("No assets match \"%s\"", assetFilter.c_str());
+    }
+  }
+  ImGui::EndChild();
+
+  if (const auto* asset = assetManager.FindAsset(mSelectedAssetId)) {
+    ImGui::SeparatorText("Selected asset");
+    ImGui::TextColored({0.78f, 0.48f, 1.0f, 1.0f}, "%s",
+                       asset->id.c_str());
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Copy ID")) {
+      ImGui::SetClipboardText(asset->id.c_str());
+    }
+    ImGui::Text("Type: %s    Group: %s",
+                managers::AssetTypeName(asset->type), asset->group.c_str());
+
+    if (asset->type == managers::AssetType::Shader) {
+      ImGui::TextWrapped("Vertex source: %s",
+                         asset->vertexPath.string().c_str());
+      ImGui::TextWrapped("Fragment source: %s",
+                         asset->fragmentPath.string().c_str());
+    } else {
+      ImGui::TextWrapped("Manifest path: %s", asset->path.string().c_str());
+      const auto resolvedPath = assetManager.ResolveAssetPath(asset->id);
+      if (!resolvedPath.empty()) {
+        ImGui::TextWrapped("Resolved file: %s",
+                           resolvedPath.string().c_str());
+      }
+    }
+
+    if (asset->type == managers::AssetType::Texture) {
+      const auto texture = assetManager.GetTexture(asset->id);
+      if (texture) {
+        ImGui::Text("Image: %u x %u px    Filter: %s", texture->GetWidth(),
+                    texture->GetHeight(),
+                    TextureFilterName(texture->GetTextureFilter()));
+        const float sourceWidth = static_cast<float>(texture->GetWidth());
+        const float sourceHeight = static_cast<float>(texture->GetHeight());
+        const float previewWidth =
+            std::min(sourceWidth, ImGui::GetContentRegionAvail().x);
+        const float previewHeight =
+            sourceWidth > 0.0f
+                ? std::min(previewWidth * sourceHeight / sourceWidth, 260.0f)
+                : 0.0f;
+        if (previewWidth > 0.0f && previewHeight > 0.0f) {
+          ImGui::Image(ImTextureID(texture->GetId()),
+                       {previewWidth, previewHeight}, {0, 1}, {1, 0});
+        }
+      }
+    } else if (asset->type == managers::AssetType::Audio) {
+      const auto clip = assetManager.GetAudioClip(asset->id);
+      if (clip) {
+        ImGui::Text("Duration: %.2f seconds", clip->GetDurationSeconds());
+      }
+    }
+  }
+
+  const auto& assetIssues = assetManager.GetIssues();
+  if (!assetIssues.empty() &&
+      ImGui::CollapsingHeader("Asset problems",
+                              ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::TextColored({1.0f, 0.35f, 0.35f, 1.0f}, "%zu problem(s)",
+                       assetIssues.size());
+    for (const auto& issue : assetIssues) {
+      ImGui::BulletText("%s: %s", issue.assetId.c_str(),
+                        issue.message.c_str());
+    }
   }
   ImGui::End();
 

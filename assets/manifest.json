@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "assets": [
+    { "id": "shader.sprite", "type": "shader", "vertex": "shaders/sprite.vert", "fragment": "shaders/sprite.frag", "group": "global" },
+
+    { "id": "character.schoolgirl1.idle", "type": "texture", "path": "character/Schoolgirl_1/Idle.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl1.walk", "type": "texture", "path": "character/Schoolgirl_1/Walk.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl1.attack", "type": "texture", "path": "character/Schoolgirl_1/Attack_1.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl1.charge", "type": "texture", "path": "character/Schoolgirl_1/Charge.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl1.hurt", "type": "texture", "path": "character/Schoolgirl_1/Hurt.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl1.dead", "type": "texture", "path": "character/Schoolgirl_1/Dead.png", "filter": "nearest", "group": "main" },
+
+    { "id": "character.schoolgirl2.idle", "type": "texture", "path": "character/Schoolgirl_2/Idle.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl2.walk", "type": "texture", "path": "character/Schoolgirl_2/Walk.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl2.attack", "type": "texture", "path": "character/Schoolgirl_2/Attack_1.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl2.hurt", "type": "texture", "path": "character/Schoolgirl_2/Hurt.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl2.dead", "type": "texture", "path": "character/Schoolgirl_2/Dead.png", "filter": "nearest", "group": "main" },
+
+    { "id": "character.schoolgirl3.idle", "type": "texture", "path": "character/Schoolgirl_3/Idle.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl3.walk", "type": "texture", "path": "character/Schoolgirl_3/Walk.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl3.attack", "type": "texture", "path": "character/Schoolgirl_3/Attack_1.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl3.hurt", "type": "texture", "path": "character/Schoolgirl_3/Hurt.png", "filter": "nearest", "group": "main" },
+    { "id": "character.schoolgirl3.dead", "type": "texture", "path": "character/Schoolgirl_3/Dead.png", "filter": "nearest", "group": "main" },
+
+    { "id": "map.background.layer0011", "type": "texture", "path": "tilemaps/Layer_0011_0.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.layer0010", "type": "texture", "path": "tilemaps/Layer_0010_1.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.layer0009", "type": "texture", "path": "tilemaps/Layer_0009_2.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.layer0008", "type": "texture", "path": "tilemaps/Layer_0008_3.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.layer0006", "type": "texture", "path": "tilemaps/Layer_0006_4.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.layer0005", "type": "texture", "path": "tilemaps/Layer_0005_5.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.layer0003", "type": "texture", "path": "tilemaps/Layer_0003_6.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.layer0002", "type": "texture", "path": "tilemaps/Layer_0002_7.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.layer0001", "type": "texture", "path": "tilemaps/Layer_0001_8.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.layer0000", "type": "texture", "path": "tilemaps/Layer_0000_9.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.lights0004", "type": "texture", "path": "tilemaps/Layer_0004_Lights.png", "filter": "nearest", "group": "main" },
+    { "id": "map.background.lights0007", "type": "texture", "path": "tilemaps/Layer_0007_Lights.png", "filter": "nearest", "group": "main" },
+
+    { "id": "snake.tile.floor", "type": "texture", "path": "snake/tile_floor.png", "filter": "nearest", "group": "snake" },
+    { "id": "snake.tile.wall", "type": "texture", "path": "snake/tile_wall.png", "filter": "nearest", "group": "snake" },
+    { "id": "snake.head", "type": "texture", "path": "snake/snake_head.png", "filter": "nearest", "group": "snake" },
+    { "id": "snake.body", "type": "texture", "path": "snake/snake_body.png", "filter": "nearest", "group": "snake" },
+    { "id": "snake.reward.red", "type": "texture", "path": "snake/reward_red.png", "filter": "nearest", "group": "snake" },
+    { "id": "snake.bonus.blue", "type": "texture", "path": "snake/bonus_blue.png", "filter": "nearest", "group": "snake" },
+
+    { "id": "tetris.background", "type": "texture", "path": "tetris/background.png", "filter": "nearest", "group": "tetris" },
+    { "id": "tetris.grid", "type": "texture", "path": "tetris/grid.png", "filter": "nearest", "group": "tetris" },
+    { "id": "tetris.frame", "type": "texture", "path": "tetris/frame.png", "filter": "nearest", "group": "tetris" },
+    { "id": "tetris.block.i", "type": "texture", "path": "tetris/block_i.png", "filter": "nearest", "group": "tetris" },
+    { "id": "tetris.block.o", "type": "texture", "path": "tetris/block_o.png", "filter": "nearest", "group": "tetris" },
+    { "id": "tetris.block.t", "type": "texture", "path": "tetris/block_t.png", "filter": "nearest", "group": "tetris" },
+    { "id": "tetris.block.s", "type": "texture", "path": "tetris/block_s.png", "filter": "nearest", "group": "tetris" },
+    { "id": "tetris.block.z", "type": "texture", "path": "tetris/block_z.png", "filter": "nearest", "group": "tetris" },
+    { "id": "tetris.block.j", "type": "texture", "path": "tetris/block_j.png", "filter": "nearest", "group": "tetris" },
+    { "id": "tetris.block.l", "type": "texture", "path": "tetris/block_l.png", "filter": "nearest", "group": "tetris" },
+    { "id": "tetris.ghost", "type": "texture", "path": "tetris/ghost.png", "filter": "nearest", "group": "tetris" }
+  ]
+}

@@ -1,0 +1,122 @@
+name: Build Tetris
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            os: macos-14
+            artifact: eclipse-tetris-macos
+          - name: Linux
+            os: ubuntu-22.04
+            artifact: eclipse-tetris-linux
+          - name: Windows
+            os: windows-2022
+            artifact: eclipse-tetris-windows
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sdl2 glm ninja
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libglm-dev ninja-build patchelf
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: vcpkg install sdl2:x64-windows glm:x64-windows
+
+      - name: Configure (Unix)
+        if: runner.os != 'Windows'
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_TESTING=ON
+          -DVCPKG_TARGET_TRIPLET=x64-windows
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test (Unix)
+        if: runner.os != 'Windows'
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:PATH = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin;$env:PATH"
+          ctest --test-dir build -C Release --output-on-failure
+
+      - name: Stage package
+        shell: bash
+        run: |
+          cmake --install build --config Release --prefix dist
+          cp README.md dist/README.md
+
+      - name: Bundle SDL on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          SDL_LIB="$(brew --prefix sdl2)/lib/libSDL2-2.0.0.dylib"
+          cp "$SDL_LIB" dist/libSDL2-2.0.0.dylib
+          install_name_tool -change "$SDL_LIB" @executable_path/libSDL2-2.0.0.dylib dist/tetrisgame
+          install_name_tool -id @executable_path/libSDL2-2.0.0.dylib dist/libSDL2-2.0.0.dylib
+          codesign --force --sign - dist/libSDL2-2.0.0.dylib
+          codesign --force --sign - dist/tetrisgame
+
+      - name: Bundle SDL on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          SDL_LIB="$(ldd dist/tetrisgame | awk '/libSDL2/{print $3; exit}')"
+          if [[ -n "$SDL_LIB" ]]; then
+            cp "$SDL_LIB" dist/
+            patchelf --set-rpath '$ORIGIN' dist/tetrisgame
+          fi
+
+      - name: Verify package contents
+        shell: bash
+        run: |
+          test -f dist/assets/manifest.json
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            test -f dist/tetrisgame.exe
+            test -f dist/SDL2.dll
+          else
+            test -x dist/tetrisgame
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/
+          if-no-files-found: error

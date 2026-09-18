@@ -1,71 +1,106 @@
 #include "framebuffer.h"
+
 #include "../src/log.h"
-#include <cstdint>
+
 #include <glad/glad.h>
-namespace eclipse::graphics{
-  FrameBuffer::FrameBuffer(uint32_t width, uint32_t height )
-  :mSize(width,height),mRenderBufferId(0),mTextureId(0),mFbo(0),mClearColor(1.f)  {
-    glGenFramebuffers(1,&mFbo);
-    glBindFramebuffer(GL_FRAMEBUFFER,mFbo);
 
-    glGenTextures(1,&mTextureId);
-    glBindTexture(GL_TEXTURE_2D,mTextureId);
-    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,mSize.x,mSize.y,0,GL_RGBA,GL_UNSIGNED_BYTE,nullptr);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D,0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,mTextureId,0);
-    glGenRenderbuffers(1,&mRenderBufferId);
-    glBindRenderbuffer(GL_RENDERBUFFER,mRenderBufferId);
-    glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH24_STENCIL8,mSize.x,mSize.y);
-    glBindRenderbuffer(GL_RENDERBUFFER,0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_STENCIL_ATTACHMENT,GL_RENDERBUFFER,mRenderBufferId);
+namespace {
 
-    int32_t compileStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if(compileStatus != GL_FRAMEBUFFER_COMPLETE){
-      ECLIPSE_ERROR("Error creating framebuffer {}",compileStatus);
-    }else{
-      glBindFramebuffer(GL_FRAMEBUFFER,0);
-    }
+bool CreateFramebuffer(std::uint32_t width, std::uint32_t height,
+                       std::uint32_t& framebuffer, std::uint32_t& texture,
+                       std::uint32_t& renderbuffer) {
+  if (width == 0 || height == 0) {
+    return false;
   }
 
-  FrameBuffer::~FrameBuffer(){
-    glDeleteTextures(1, &mTextureId);
-    glDeleteRenderbuffers(1, &mRenderBufferId);
-    glDeleteFramebuffers(1,&mFbo);
-    mFbo = 0;
-    mTextureId = 0;
-    mRenderBufferId = 0;
+  glGenFramebuffers(1, &framebuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, static_cast<GLsizei>(width),
+               static_cast<GLsizei>(height), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+               nullptr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                         texture, 0);
+
+  glGenRenderbuffers(1, &renderbuffer);
+  glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+                        static_cast<GLsizei>(width),
+                        static_cast<GLsizei>(height));
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                            GL_RENDERBUFFER, renderbuffer);
+
+  const auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  if (status == GL_FRAMEBUFFER_COMPLETE) {
+    return true;
   }
 
-  void FrameBuffer::Resize(uint32_t width, uint32_t height){
-    if(mSize.x == static_cast<int>(width) && mSize.y == static_cast<int>(height)){
-      return;
-    }
-
-    mSize = glm::ivec2(width, height);
-    glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-    glDeleteTextures(1, &mTextureId);
-    glDeleteRenderbuffers(1, &mRenderBufferId);
-
-    glGenTextures(1, &mTextureId);
-    glBindTexture(GL_TEXTURE_2D, mTextureId);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mSize.x, mSize.y, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                           mTextureId, 0);
-
-    glGenRenderbuffers(1, &mRenderBufferId);
-    glBindRenderbuffer(GL_RENDERBUFFER, mRenderBufferId);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mSize.x,
-                          mSize.y);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-                              GL_RENDERBUFFER, mRenderBufferId);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  }
-  
+  ECLIPSE_ERROR("Error creating framebuffer: {}", status);
+  glDeleteRenderbuffers(1, &renderbuffer);
+  glDeleteTextures(1, &texture);
+  glDeleteFramebuffers(1, &framebuffer);
+  framebuffer = 0;
+  texture = 0;
+  renderbuffer = 0;
+  return false;
 }
+
+} // namespace
+
+namespace eclipse::graphics {
+
+FrameBuffer::FrameBuffer(std::uint32_t width, std::uint32_t height)
+    : mSize(static_cast<int>(width), static_cast<int>(height)),
+      mClearColor(1.0f) {
+  CreateFramebuffer(width, height, mFbo, mTextureId, mRenderBufferId);
+}
+
+FrameBuffer::~FrameBuffer() {
+  if (mTextureId != 0) {
+    glDeleteTextures(1, &mTextureId);
+  }
+  if (mRenderBufferId != 0) {
+    glDeleteRenderbuffers(1, &mRenderBufferId);
+  }
+  if (mFbo != 0) {
+    glDeleteFramebuffers(1, &mFbo);
+  }
+}
+
+void FrameBuffer::Resize(std::uint32_t width, std::uint32_t height) {
+  if (width == 0 || height == 0 ||
+      (mSize.x == static_cast<int>(width) &&
+       mSize.y == static_cast<int>(height))) {
+    return;
+  }
+
+  std::uint32_t framebuffer = 0;
+  std::uint32_t texture = 0;
+  std::uint32_t renderbuffer = 0;
+  if (!CreateFramebuffer(width, height, framebuffer, texture, renderbuffer)) {
+    return;
+  }
+
+  glDeleteTextures(1, &mTextureId);
+  glDeleteRenderbuffers(1, &mRenderBufferId);
+  glDeleteFramebuffers(1, &mFbo);
+  mFbo = framebuffer;
+  mTextureId = texture;
+  mRenderBufferId = renderbuffer;
+  mSize = {static_cast<int>(width), static_cast<int>(height)};
+}
+
+void FrameBuffer::Bind() { glBindFramebuffer(GL_FRAMEBUFFER, mFbo); }
+
+void FrameBuffer::UnBind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+
+} // namespace eclipse::graphics

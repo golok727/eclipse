@@ -12,7 +12,9 @@
 #include "../graphics/texture.h"
 #include "../systems/pathfinding.h"
 
+#include <array>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace eclipse::editor {
@@ -43,6 +45,8 @@ private:
   systems::PathGrid mDemoGrid;
   std::vector<systems::PathSearchFrame> mDemoFrames;
   std::size_t mDemoFrame = 0;
+  std::array<char, 128> mAssetFilter{};
+  std::string mSelectedAssetId;
   float mDemoElapsed = 0.0f;
 };
 

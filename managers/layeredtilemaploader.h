@@ -1,7 +1,7 @@
 #pragma once
 
-#include "assetmanager.h"
 #include "../ecs/world.h"
+#include "assetmanager.h"
 
 #include <memory>
 #include <string>
@@ -16,10 +16,8 @@ namespace eclipse::managers {
 
 class LayeredTilemapLoader {
 public:
-  bool Load(const std::string& directory,
-            const std::vector<std::string>& layerNames,
-            ecs::World& world,
-            AssetManager& assets,
+  bool Load(const std::vector<std::string>& layerAssetIds,
+            ecs::World& world, AssetManager& assets,
             const std::shared_ptr<graphics::Mesh>& mesh,
             const std::shared_ptr<graphics::Shader>& shader);
 };

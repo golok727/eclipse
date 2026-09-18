@@ -5,8 +5,8 @@
 namespace eclipse{
 class App{
   public:
-    App(){}
-    ~App(){}
+    App() = default;
+    virtual ~App() = default;
     inline virtual core::WindowProperites GetWindowProperties(){return core::WindowProperites();}
     virtual void Initialize(ecs::World&, managers::AssetManager&){}
     virtual void Shutdown(){}

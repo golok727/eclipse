@@ -9,6 +9,7 @@ namespace eclipse::input{
 
 std::array<bool, keyboard::KeyCount> keyboard::keys;
 std::array<bool, keyboard::KeyCount> keyboard::keysLast;
+bool keyboard::isEnabled = true;
 
 
 
@@ -16,6 +17,7 @@ void keyboard::Initialize(){
   std::fill(keys.begin(), keys.end(), false);
 
   std::fill(keysLast.begin(), keysLast.end(), false);
+  isEnabled = true;
 
 }
 
@@ -32,12 +34,15 @@ const Uint8* state = SDL_GetKeyboardState(NULL);
 
 }
 }
+void keyboard::SetEnabled(bool enabled) {
+  isEnabled = enabled;
+}
 // bounds check
 
 bool keyboard::Key(int key){
   ECLIPSE_ASSERT(key >= ECLIPSE_INPUT_KEY_FIRST && key < KeyCount, "Invalid keyboard key");
   if(key >= ECLIPSE_INPUT_KEY_FIRST && key < KeyCount){
-    return keys[key ];
+    return isEnabled && keys[key];
    }
    return false;
 }
@@ -46,7 +51,7 @@ bool keyboard::Key(int key){
 bool keyboard::KeyUp(int key){
    ECLIPSE_ASSERT(key >= ECLIPSE_INPUT_KEY_FIRST && key < KeyCount, "Invalid keyboard key");
   if(key >= ECLIPSE_INPUT_KEY_FIRST && key < KeyCount){
-    return !keys[key] && keysLast[key];
+    return isEnabled && !keys[key] && keysLast[key];
    }
    return false;
 }
@@ -57,7 +62,7 @@ bool keyboard::KeyDown(int key){
   ECLIPSE_ASSERT(key >= ECLIPSE_INPUT_KEY_FIRST && key < KeyCount, "Invalid keyboard key");
   if(key >= ECLIPSE_INPUT_KEY_FIRST && key < KeyCount ){
   
-    return keys[key] && !keysLast[key];
+    return isEnabled && keys[key] && !keysLast[key];
    }
    return false;
 }

@@ -5,7 +5,7 @@
 #include "../graphics/texture.h"
 #include "../ecs/entity.h"
 
-#include "../glm/glm.hpp"
+#include <glm/glm.hpp>
 #include <memory>
 
 namespace eclipse::components {

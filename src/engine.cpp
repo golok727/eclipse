@@ -1,54 +1,86 @@
 #include "engine.h"
-#include "../src/log.h"
-#include <SDL2/SDL.h>
-#include <SDL_error.h>
+
 #include "../input/keyboard.h"
 #include "../input/mouse.h"
-#include "../input/actions.h"
+#include "../src/log.h"
+
+#include <SDL2/SDL.h>
+
+#include <cstdlib>
+#include <filesystem>
 #include <string>
-namespace eclipse {
-Engine::Engine():mIsInitialized(false),mIsRunning(false),mApp(nullptr){
-  
+
+namespace {
+
+std::filesystem::path FindAssetRoot() {
+  if (const char* overrideRoot = std::getenv("ECLIPSE_ASSET_ROOT")) {
+    return overrideRoot;
+  }
+
+  char* basePath = SDL_GetBasePath();
+  if (basePath) {
+    const std::filesystem::path packaged =
+        std::filesystem::path(basePath) / "assets";
+    SDL_free(basePath);
+    if (std::filesystem::is_regular_file(packaged / "manifest.json")) {
+      return packaged;
+    }
+  }
+  return "assets";
 }
+
+} // namespace
+
+namespace eclipse {
+
+Engine::Engine() : mIsInitialized(false), mIsRunning(false), mApp(nullptr) {}
 
 Engine::~Engine() {
-  if(mApp){
+  if (mIsInitialized) {
     Shutdown();
   }
 }
 
-void Engine::Run(App* app){
+void Engine::Run(App* app) {
   mLogManager.Initialize();
-  ECLIPSE_ASSERT(!mApp, "trying to reinitialize app ");
-  if(mApp){
+  ECLIPSE_ASSERT(app != nullptr, "cannot run a null app");
+  ECLIPSE_ASSERT(mApp == nullptr, "trying to reinitialize app");
+  if (!app || mApp) {
+    mLogManager.Shutdown();
     return;
   }
+
   mApp = app;
-  if(Initialize()){
-    while(mIsRunning){
-      Update();
+  if (!Initialize()) {
+    mApp = nullptr;
+    mLogManager.Shutdown();
+    return;
+  }
+
+  while (mIsRunning) {
+    Update();
+    if (mIsRunning) {
       Render();
     }
-    Shutdown();
   }
+  Shutdown();
 }
 
-void Engine::Update(){
+void Engine::Update() {
   mWindow.PollEvents();
+  mClock.Tick();
+  if (!mIsRunning) {
+    return;
+  }
+
   if (input::keyboard::KeyDown(input::ECLIPSE_INPUT_KEY_F5)) {
     ReloadScene();
     return;
   }
-  if (input::ActionPressed(input::Action::Pause)) {
-    const auto state = mGameStateManager.Current();
-    mGameStateManager.Set(state == managers::GameState::Paused
-                              ? managers::GameState::Playing
-                              : managers::GameState::Paused);
-  }
   if (mGameStateManager.Current() != managers::GameState::Playing) {
     return;
   }
-  mClock.Tick();
+
   const float deltaTime = mClock.GetDeltaTime();
   mMovementSystem.Update(mWorld, deltaTime);
   mNpcSystem.Update(mWorld, deltaTime);
@@ -67,95 +99,104 @@ bool Engine::LoadScene(const std::string& name) {
   return mSceneManager.Load(name, mWorld, mAssetManager);
 }
 
-void Engine::Render(){
+void Engine::Render() {
   mWindow.BeginRender();
   mRenderSystem.Render(mWorld, mRenderManager);
   mWindow.EndRender();
 }
 
+void Engine::Quit() { mIsRunning = false; }
 
-void Engine::Quit(){
-  mIsRunning = false;
+Engine& Engine::Instance() {
+  static Engine instance;
+  return instance;
 }
-
-Engine* Engine::mInstance = nullptr;
-
-Engine& Engine::Instance(){
-  if(!mInstance){
-    mInstance = new Engine;
-  }
-  return *mInstance;
-}
-
 
 bool Engine::Initialize() {
   ECLIPSE_ASSERT(!mIsInitialized, "trying to reinitialize engine");
   GetInfo();
-  bool flag = false;
-  if (SDL_Init(SDL_INIT_EVERYTHING) > 0) {
-    ECLIPSE_ERROR("Error initializing SDL2 {}", SDL_GetError());
-    flag = false;
-  } else {
-    SDL_version version;
-    SDL_VERSION(&version);
-    ECLIPSE_INFO(
-        "SDL {}.{}.{}",
-        (int)version.major,
-        (int)version.minor,
-        (int)version.patch
-    );
 
-
-      core::WindowProperites props = mApp->GetWindowProperties();
-      if(mWindow.Create(props)){
-        mRenderManager.Initialize();
-        mClock.Initialize();
-        mAudioManager.Initialize();
-        flag = true;
-        mIsInitialized = true;
-        mIsRunning = true;
-         mSceneManager.Register(
-             "main", [this](ecs::World& world, managers::AssetManager& assets) {
-               mApp->Initialize(world, assets);
-             });
-         LoadScene("main");
-         mGameStateManager.Set(managers::GameState::Playing);
-        input::mouse::Initialize();
-        input::keyboard::Initialize();
-      }
+  if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+    ECLIPSE_ERROR("Error initializing SDL2: {}", SDL_GetError());
+    return false;
   }
-  return flag;
+
+  SDL_version version;
+  SDL_VERSION(&version);
+  ECLIPSE_INFO("SDL {}.{}.{}", static_cast<int>(version.major),
+               static_cast<int>(version.minor),
+               static_cast<int>(version.patch));
+
+  const core::WindowProperites properties = mApp->GetWindowProperties();
+  if (!mWindow.Create(properties)) {
+    SDL_Quit();
+    return false;
+  }
+
+  mRenderManager.Initialize();
+  mClock.Initialize();
+  if (!mAudioManager.Initialize()) {
+    ECLIPSE_WARN("Continuing without audio output");
+  }
+  if (!mAssetManager.Initialize(FindAssetRoot())) {
+    mAudioManager.Shutdown();
+    mRenderManager.Shutdown();
+    mWindow.Shutdown();
+    SDL_Quit();
+    return false;
+  }
+
+  input::mouse::Initialize();
+  input::keyboard::Initialize();
+  mSceneManager.Register(
+      "main", [this](ecs::World& world, managers::AssetManager& assets) {
+        mApp->Initialize(world, assets);
+      });
+
+  mIsInitialized = true;
+  mIsRunning = true;
+  if (!LoadScene("main")) {
+    Shutdown();
+    return false;
+  }
+  mGameStateManager.Set(managers::GameState::Playing);
+  return true;
 }
 
-void Engine::Shutdown(){
-  mIsInitialized = false;
+void Engine::Shutdown() {
   mIsRunning = false;
-  mApp->Shutdown();
+  if (mApp) {
+    mApp->Shutdown();
+  }
+
   mWorld.Clear();
   mAssetManager.Clear();
   mRenderManager.Shutdown();
   mAudioManager.Shutdown();
   mWindow.Shutdown();
-  mLogManager.Shutdown();
   SDL_Quit();
+
+  mIsInitialized = false;
+  mApp = nullptr;
+  mLogManager.Shutdown();
 }
 
-void Engine::GetInfo(){
-  #ifdef ECLIPSE_CONFIG_DEBUG
+void Engine::GetInfo() {
+#ifdef ECLIPSE_CONFIG_DEBUG
   ECLIPSE_DEBUG("Configuration: DEBUG");
-  #endif
-  #ifdef ECLIPSE_CONFIG_RELEASE
+#endif
+#ifdef ECLIPSE_CONFIG_RELEASE
   ECLIPSE_DEBUG("Configuration: RELEASE");
-  #endif
-  #ifdef ECLIPSE_PLATFORM_MAC
+#endif
+#ifdef ECLIPSE_PLATFORM_MAC
   ECLIPSE_WARN("Platform: MAC");
-  #endif
-  #ifdef ECLIPSE_PLATFORM_WINDOWS
+#endif
+#ifdef ECLIPSE_PLATFORM_WINDOWS
   ECLIPSE_WARN("Platform: WINDOWS");
-  #endif
-  #ifdef ECLIPSE_PLATFORM_LINUX
+#endif
+#ifdef ECLIPSE_PLATFORM_LINUX
   ECLIPSE_WARN("Platform: LINUX");
-  #endif
+#endif
 }
 
 } // namespace eclipse

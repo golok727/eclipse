@@ -3,7 +3,6 @@ print("[premake] generating project files...")
 
 workspace "eclipse"
     startproject "eclipseeditor"
-    architecture "ARM64"
 
     configurations
     {
@@ -18,6 +17,7 @@ odir = "bin-obj/%{cfg.buildcfg}/%{prj.name}"
 externals = {}
 externals["spdlog"] = "external/spdlog"
 externals["glad"] = "external/glad"
+pythonCommand = os.host() == "windows" and "py -3" or "python3"
 
 project "eclipse"
     location "eclipse"
@@ -149,6 +149,11 @@ project "eclipseeditor"
         "editor/**.cpp"
     }
 
+    postbuildcommands
+    {
+        pythonCommand .. " ../tools/package_assets.py ../assets %{cfg.targetdir}/assets"
+    }
+
     sysincludedirs
     {
         "eclipse/include",
@@ -238,6 +243,293 @@ project "eclipseeditor"
             "ECLIPSE_CONFIG_RELEASE",
             "NDEBUG"
         }
+        runtime "Release"
+        symbols "off"
+        optimize "on"
+
+project "snakegame"
+    location "games/snake"
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++17"
+    staticruntime "on"
+    links "eclipse"
+
+    targetdir(tdir)
+    objdir(odir)
+
+    files
+    {
+        "games/snake/**.h",
+        "games/snake/**.cpp"
+    }
+
+    postbuildcommands
+    {
+        pythonCommand .. " ../../tools/package_assets.py ../../assets %{cfg.targetdir}/assets snake"
+    }
+
+    sysincludedirs
+    {
+        "eclipse/include",
+        "/opt/homebrew/include",
+        "/opt/homebrew/include/SDL2",
+        "%{externals.spdlog}/include",
+        "%{externals.glad}/include"
+    }
+
+    includedirs
+    {
+        "src",
+        "core",
+        "managers",
+        "graphics",
+        "input"
+    }
+
+    flags
+    {
+        "FatalWarnings"
+    }
+
+    filter {"system:windows", "configurations:*"}
+        systemversion "latest"
+        defines
+        {
+            "ECLIPSE_PLATFORM_WINDOWS"
+        }
+
+        links
+        {
+            "SDL2"
+        }
+
+    filter {"system:macosx", "configurations:*"}
+        xcodebuildsettings
+        {
+            ["MACOSX_DEPLOYMENT_TARGET"] = "10.15",
+            ["UseModernBuildSystem"] = "NO"
+        }
+        defines
+        {
+            "ECLIPSE_PLATFORM_MAC"
+        }
+
+        libdirs
+        {
+            "/opt/homebrew/lib"
+        }
+
+        links
+        {
+            "SDL2",
+            "SDL2main"
+        }
+
+        linkoptions
+        {
+            "-Wl,-framework,Cocoa"
+        }
+
+    filter {"system:linux", "configurations:*"}
+        defines
+        {
+            "ECLIPSE_PLATFORM_LINUX"
+        }
+
+        links
+        {
+            "SDL2",
+            "dl"
+        }
+
+    filter "configurations:Debug"
+        defines
+        {
+            "ECLIPSE_CONFIG_DEBUG",
+            "DEBUG"
+        }
+        runtime "Debug"
+        symbols "on"
+
+    filter "configurations:Release"
+        defines
+        {
+            "ECLIPSE_CONFIG_RELEASE",
+            "NDEBUG"
+        }
+        runtime "Release"
+        symbols "off"
+        optimize "on"
+
+project "tetrisgame"
+    location "games/tetris"
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++17"
+    staticruntime "on"
+    links "eclipse"
+
+    targetdir(tdir)
+    objdir(odir)
+
+    files
+    {
+        "games/tetris/**.h",
+        "games/tetris/**.cpp"
+    }
+
+    postbuildcommands
+    {
+        pythonCommand .. " ../../tools/package_assets.py ../../assets %{cfg.targetdir}/assets tetris"
+    }
+
+    sysincludedirs
+    {
+        "eclipse/include",
+        "/opt/homebrew/include",
+        "/opt/homebrew/include/SDL2",
+        "%{externals.spdlog}/include",
+        "%{externals.glad}/include"
+    }
+
+    includedirs
+    {
+        "src",
+        "core",
+        "managers",
+        "graphics",
+        "input"
+    }
+
+    flags
+    {
+        "FatalWarnings"
+    }
+
+    filter {"system:windows", "configurations:*"}
+        systemversion "latest"
+        defines
+        {
+            "ECLIPSE_PLATFORM_WINDOWS"
+        }
+
+        links
+        {
+            "SDL2"
+        }
+
+    filter {"system:macosx", "configurations:*"}
+        xcodebuildsettings
+        {
+            ["MACOSX_DEPLOYMENT_TARGET"] = "10.15",
+            ["UseModernBuildSystem"] = "NO"
+        }
+        defines
+        {
+            "ECLIPSE_PLATFORM_MAC"
+        }
+
+        libdirs
+        {
+            "/opt/homebrew/lib"
+        }
+
+        links
+        {
+            "SDL2",
+            "SDL2main"
+        }
+
+        linkoptions
+        {
+            "-Wl,-framework,Cocoa"
+        }
+
+    filter {"system:linux", "configurations:*"}
+        defines
+        {
+            "ECLIPSE_PLATFORM_LINUX"
+        }
+
+        links
+        {
+            "SDL2",
+            "dl"
+        }
+
+    filter "configurations:Debug"
+        defines
+        {
+            "ECLIPSE_CONFIG_DEBUG",
+            "DEBUG"
+        }
+        runtime "Debug"
+        symbols "on"
+
+    filter "configurations:Release"
+        defines
+        {
+            "ECLIPSE_CONFIG_RELEASE",
+            "NDEBUG"
+        }
+        runtime "Release"
+        symbols "off"
+        optimize "on"
+
+project "eclipsetests"
+    location "eclipsetests"
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++17"
+    staticruntime "on"
+    links "eclipse"
+
+    targetdir(tdir)
+    objdir(odir)
+
+    files
+    {
+        "tests/**.h",
+        "tests/**.cpp"
+    }
+
+    sysincludedirs
+    {
+        "eclipse/include",
+        "/opt/homebrew/include",
+        "/opt/homebrew/include/SDL2",
+        "%{externals.spdlog}/include",
+        "%{externals.glad}/include"
+    }
+
+    flags
+    {
+        "FatalWarnings"
+    }
+
+    filter {"system:windows", "configurations:*"}
+        systemversion "latest"
+        defines { "ECLIPSE_PLATFORM_WINDOWS" }
+        links { "SDL2" }
+
+    filter {"system:macosx", "configurations:*"}
+        defines { "ECLIPSE_PLATFORM_MAC" }
+        libdirs { "/opt/homebrew/lib" }
+        links { "SDL2", "SDL2main" }
+        linkoptions { "-Wl,-framework,Cocoa" }
+
+    filter {"system:linux", "configurations:*"}
+        defines { "ECLIPSE_PLATFORM_LINUX" }
+        links { "SDL2", "dl" }
+
+    filter "configurations:Debug"
+        defines { "ECLIPSE_CONFIG_DEBUG", "DEBUG" }
+        runtime "Debug"
+        symbols "on"
+
+    filter "configurations:Release"
+        defines { "ECLIPSE_CONFIG_RELEASE", "NDEBUG" }
         runtime "Release"
         symbols "off"
         optimize "on"

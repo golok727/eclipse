@@ -19,6 +19,9 @@ bool SceneManager::Load(const std::string& name, ecs::World& world,
   }
 
   world.Clear();
+  if (!mCurrent.empty()) {
+    assets.UnloadGroup(mCurrent);
+  }
   it->second(world, assets);
   mCurrent = name;
   ECLIPSE_INFO("Loaded scene '{}'", name);

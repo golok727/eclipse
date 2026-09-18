@@ -22,10 +22,12 @@ int mouse::yLast = 0;
 
 std::array<bool, mouse::ButtonCount> mouse::buttons;
 std::array<bool, mouse::ButtonCount> mouse::buttonsLast;
+bool mouse::isEnabled = true;
 
 void mouse::Initialize(){
   std::fill(buttons.begin(), buttons.end(), false);
   std::fill(buttonsLast.begin(), buttonsLast.end(), false);
+  isEnabled = true;
 
 }
 
@@ -44,6 +46,9 @@ void mouse::Update(){
     
     }
   }
+void mouse::SetEnabled(bool enabled){
+  isEnabled = enabled;
+}
 
 
 
@@ -52,7 +57,7 @@ void mouse::Update(){
 bool mouse::Button(int button){
   ECLIPSE_ASSERT(button >= ECLIPSE_INPUT_MOUSE_FIRST && button <= ECLIPSE_INPUT_MOUSE_LAST, "Invalid mouse button");
   if(button >= ECLIPSE_INPUT_MOUSE_FIRST && button <= ECLIPSE_INPUT_MOUSE_LAST){
-    return buttons[button -1];
+    return isEnabled && buttons[button -1];
    }
    return false;
 }
@@ -62,7 +67,7 @@ bool mouse::ButtonUp(int button){
   
   ECLIPSE_ASSERT(button >= ECLIPSE_INPUT_MOUSE_FIRST && button <= ECLIPSE_INPUT_MOUSE_LAST, "Invalid mouse button");
   if(button >= ECLIPSE_INPUT_MOUSE_FIRST && button <= ECLIPSE_INPUT_MOUSE_LAST){
-    return !buttons[button - 1] && buttonsLast[button -1];
+    return isEnabled && !buttons[button - 1] && buttonsLast[button -1];
    }
    return false;
 }
@@ -72,7 +77,7 @@ bool mouse::ButtonDown(int button){
   
   ECLIPSE_ASSERT(button >= ECLIPSE_INPUT_MOUSE_FIRST && button <= ECLIPSE_INPUT_MOUSE_LAST, "Invalid mouse button");
   if(button >= ECLIPSE_INPUT_MOUSE_FIRST && button <= ECLIPSE_INPUT_MOUSE_LAST){
-    return buttons[button - 1] && !buttonsLast[button -1];
+    return isEnabled && buttons[button - 1] && !buttonsLast[button -1];
    }
    return false;
 }

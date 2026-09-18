@@ -1,17 +1,15 @@
 #include "window.h"
+
 #include "../input/keyboard.h"
 #include "../input/mouse.h"
 #include "../src/engine.h"
 #include "../src/log.h"
-#include <SDL2/SDL.h>
-#include <SDL_error.h>
-#include <SDL_events.h>
-#include <SDL_video.h>
+
 #include <glad/glad.h>
-#include <memory>
+
 namespace eclipse::core {
 
-WindowProperites::WindowProperites(){
+WindowProperites::WindowProperites() {
   title = "eclipse";
   x = SDL_WINDOWPOS_CENTERED;
   y = SDL_WINDOWPOS_CENTERED;
@@ -19,71 +17,83 @@ WindowProperites::WindowProperites(){
   h = 1080;
   wMin = 400;
   hMin = 400;
-  clearColor = glm::vec3(0,0,255);
+  clearColor = glm::vec3(0, 0, 255);
   flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 }
 
+Window::Window() : mWindow(nullptr), mGLContext(nullptr) {}
 
+Window::~Window() { Shutdown(); }
 
-
-Window::Window() : mWindow(nullptr),mGLContext(nullptr){}
-Window::~Window() {
+bool Window::Create(const WindowProperites& properties) {
   if (mWindow) {
-    Shutdown();
-  }
-}
-bool Window::Create(const WindowProperites& props) {
-  mWindow = SDL_CreateWindow(
-      props.title.c_str(),
-      props.x,
-      props.y,
-      props.w,
-      props.h,
-      props.flags
-  );
-  if (!mWindow) {
-    ECLIPSE_ERROR("Error creating SDL Windows {}", SDL_GetError());
+    ECLIPSE_ERROR("Cannot create an already initialized window");
     return false;
   }
 
   SetAttributes();
+  mWindow = SDL_CreateWindow(properties.title.c_str(), properties.x,
+                             properties.y, properties.w, properties.h,
+                             properties.flags);
+  if (!mWindow) {
+    ECLIPSE_ERROR("Error creating SDL window: {}", SDL_GetError());
+    return false;
+  }
 
   mGLContext = SDL_GL_CreateContext(mWindow);
-
-  if(!mGLContext){
-    ECLIPSE_ERROR("Error Creating SDL GL context");
+  if (!mGLContext) {
+    ECLIPSE_ERROR("Error creating SDL GL context: {}", SDL_GetError());
+    Shutdown();
+    return false;
+  }
+  if (SDL_GL_MakeCurrent(mWindow, mGLContext) != 0) {
+    ECLIPSE_ERROR("Error activating SDL GL context: {}", SDL_GetError());
+    Shutdown();
+    return false;
+  }
+  if (!gladLoadGLLoader(SDL_GL_GetProcAddress)) {
+    ECLIPSE_ERROR("Error loading OpenGL functions");
+    Shutdown();
+    return false;
+  }
+  if (SDL_GL_SetSwapInterval(1) != 0) {
+    ECLIPSE_WARN("Unable to enable vertical sync: {}", SDL_GetError());
   }
 
-  if(!gladLoadGLLoader(SDL_GL_GetProcAddress)){
-    ECLIPSE_ERROR("Error loading gl proc");
+  SDL_SetWindowMinimumSize(mWindow, properties.wMin, properties.hMin);
+  if (!mImGuiWindow.Create(properties.ImGuiProps)) {
+    Shutdown();
+    return false;
   }
 
-   SDL_SetWindowMinimumSize(mWindow, props.wMin, props.hMin);
-
-  mImGuiWindow.Create(props.ImGuiProps);
-
-
-  mFrameBuffer = std::make_shared<graphics::FrameBuffer>(props.w,props.h);
-  glm::vec4 clearColor(props.clearColor.r,props.clearColor.g,props.clearColor.b,1.f);
-  mFrameBuffer->SetClearColor(clearColor);
-  
+  mFrameBuffer = std::make_shared<graphics::FrameBuffer>(properties.w,
+                                                          properties.h);
+  if (!mFrameBuffer->IsValid()) {
+    ECLIPSE_ERROR("Unable to create the game framebuffer");
+    Shutdown();
+    return false;
+  }
+  mFrameBuffer->SetClearColor(
+      {properties.clearColor.r, properties.clearColor.g,
+       properties.clearColor.b, 1.0f});
   return true;
 }
 
-void Window::BeginRender(){
-  auto size = GetSize();
-  mFrameBuffer->Resize(size.x, size.y);
-  auto& rm = Engine::Instance().GetRenderManager();
-  rm.Clear();
-  rm.Submit(ECLIPSE_SUBMIT_RC(PushFrameBuffer,mFrameBuffer));
+void Window::BeginRender() {
+  const auto size = GetSize();
+  if (size.x > 0 && size.y > 0) {
+    mFrameBuffer->Resize(static_cast<std::uint32_t>(size.x),
+                         static_cast<std::uint32_t>(size.y));
+  }
+  auto& renderManager = Engine::Instance().GetRenderManager();
+  renderManager.Clear();
+  renderManager.Submit(ECLIPSE_SUBMIT_RC(PushFrameBuffer, mFrameBuffer));
 }
 
-void Window::EndRender(){
-
-  auto& rm = Engine::Instance().GetRenderManager();
-  rm.Submit(ECLIPSE_SUBMIT_RC(PopFrameBuffer));
-  rm.Flush();
-
+void Window::EndRender() {
+  auto& renderManager = Engine::Instance().GetRenderManager();
+  renderManager.Submit(ECLIPSE_SUBMIT_RC(PopFrameBuffer));
+  renderManager.Flush();
 
   mImGuiWindow.BeginRender();
   Engine::Instance().GetApp().ImGuiRender();
@@ -91,52 +101,54 @@ void Window::EndRender(){
   SDL_GL_SwapWindow(mWindow);
 }
 
-
 void Window::SetAttributes() {
-
 #ifdef ECLIPSE_PLATFORM_MAC
-  SDL_GL_SetAttribute(
-      SDL_GL_CONTEXT_FLAGS,
-      SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
-  );
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,
+                      SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 #endif
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-  
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 }
 
-glm::ivec2 Window::GetSize(){
-  int w,h;
-  SDL_GetWindowSize(mWindow, &w, &h);
-  return glm::ivec2(w,h);
+glm::ivec2 Window::GetSize() {
+  int width = 0;
+  int height = 0;
+  if (mWindow) {
+    SDL_GetWindowSize(mWindow, &width, &height);
+  }
+  return {width, height};
 }
-
 
 void Window::PollEvents() {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     mImGuiWindow.HandleSDLEvents(event);
-    switch (event.type) {
-    case SDL_QUIT:
+    if (event.type == SDL_QUIT) {
       Engine::Instance().Quit();
-    default:
-      break;
     }
   }
-  if(!mImGuiWindow.WantToCaptureKeyboard()){
-    input::keyboard::Update();
-  }
-  if(!mImGuiWindow.WantToCaptureMouse()){
-    input::mouse::Update();
-  }
+
+  input::keyboard::Update();
+  input::mouse::Update();
+  input::keyboard::SetEnabled(!mImGuiWindow.WantToCaptureKeyboard());
+  input::mouse::SetEnabled(!mImGuiWindow.WantToCaptureMouse());
 }
+
 void Window::Shutdown() {
-  SDL_DestroyWindow(mWindow);
-  mWindow = nullptr;
-  SDL_GL_DeleteContext(mGLContext);
-  mGLContext = nullptr;
+  mImGuiWindow.Shutdown();
+  mFrameBuffer.reset();
+  if (mGLContext) {
+    SDL_GL_DeleteContext(mGLContext);
+    mGLContext = nullptr;
+  }
+  if (mWindow) {
+    SDL_DestroyWindow(mWindow);
+    mWindow = nullptr;
+  }
 }
+
 } // namespace eclipse::core

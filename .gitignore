@@ -28,6 +28,10 @@ __pycache__/
 # Linter / tool caches
 .ruff_cache/
 
+# Local documentation and notes
+docs/
+*.md
+
 # OS junk
 .DS_Store
 Thumbs.db

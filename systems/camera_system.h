@@ -2,7 +2,7 @@
 
 #include "../ecs/world.h"
 
-#include "../glm/glm.hpp"
+#include <glm/glm.hpp>
 
 namespace eclipse::systems {
 

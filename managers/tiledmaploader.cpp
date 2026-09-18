@@ -4,6 +4,7 @@
 #include "../components/gameplaycomponents.h"
 #include "../src/log.h"
 
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -98,7 +99,9 @@ bool TiledMapLoader::Load(
         tileset.columns = IntegerAttribute(header, "columns", 1);
         tileset.tileWidth = IntegerAttribute(header, "tilewidth", 16);
         tileset.tileHeight = IntegerAttribute(header, "tileheight", 16);
-        tileset.texture = assets.LoadTexture(assetDirectory + "/" + source);
+        tileset.texture = assets.LoadTextureFile(
+            std::filesystem::path(assetDirectory) / source,
+            eclipse::graphics::TextureFilter::Nearest);
         tilesets.push_back(std::move(tileset));
       }
     }

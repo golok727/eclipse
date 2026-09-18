@@ -6,26 +6,22 @@
 namespace eclipse::managers {
 
 bool LayeredTilemapLoader::Load(
-    const std::string& directory,
-    const std::vector<std::string>& layerNames,
-    ecs::World& world,
-    AssetManager& assets,
-    const std::shared_ptr<graphics::Mesh>& mesh,
+    const std::vector<std::string>& layerAssetIds, ecs::World& world,
+    AssetManager& assets, const std::shared_ptr<graphics::Mesh>& mesh,
     const std::shared_ptr<graphics::Shader>& shader) {
-  if (layerNames.empty() || !mesh || !shader) {
+  if (layerAssetIds.empty() || !mesh || !shader) {
     ECLIPSE_ERROR("Unable to load layered tilemap: missing layers or renderer");
     return false;
   }
 
   int loadedLayers = 0;
-  for (std::size_t index = 0; index < layerNames.size(); ++index) {
-    const auto texture = assets.LoadTexture(directory + "/" + layerNames[index]);
-    if (!texture || texture->GetWidth() == 0 || texture->GetHeight() == 0) {
-      ECLIPSE_ERROR("Unable to load tilemap layer '{}'", layerNames[index]);
+  for (std::size_t index = 0; index < layerAssetIds.size(); ++index) {
+    const auto texture = assets.GetTexture(layerAssetIds[index]);
+    if (!texture || !texture->IsLoadedFromSource()) {
+      ECLIPSE_ERROR("Unable to load tilemap layer asset '{}'",
+                    layerAssetIds[index]);
       continue;
     }
-
-    texture->SetTextureFilter(graphics::TextureFilter::Nearest);
 
     const auto entity = world.CreateEntity();
     world.Add<components::Transform>(
@@ -42,9 +38,9 @@ bool LayeredTilemapLoader::Load(
     ++loadedLayers;
   }
 
-  ECLIPSE_INFO("Loaded {} layered tilemap images from '{}'", loadedLayers,
-               directory);
-  return loadedLayers == static_cast<int>(layerNames.size());
+  ECLIPSE_INFO("Loaded {} of {} layered tilemap assets", loadedLayers,
+               layerAssetIds.size());
+  return loadedLayers == static_cast<int>(layerAssetIds.size());
 }
 
 } // namespace eclipse::managers

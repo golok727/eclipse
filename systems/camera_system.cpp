@@ -1,8 +1,7 @@
 #include "camera_system.h"
 
 #include "../components/rendercomponents.h"
-#include "../glm/gtc/matrix_transform.hpp"
-
+#include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 
 namespace eclipse::systems {
